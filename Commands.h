@@ -48,20 +48,11 @@ class RedirectionCommand : public Command {
   //void cleanup() override;
 };
 
-class ChangeDirCommand : public BuiltInCommand {
-// TODO: Add your data members public:
-  ChangeDirCommand(const char* cmd_line, char** plastPwd);
-  virtual ~ChangeDirCommand() {}
-  void execute() override;
-};
+class JobsList;
 
-class GetCurrDirCommand : public BuiltInCommand {
- public:
-  GetCurrDirCommand(const char* cmd_line);
-  virtual ~GetCurrDirCommand() {}
-  void execute() override;
-};
-
+/*
+ * 2. showpid
+ */
 class ShowPidCommand : public BuiltInCommand {
  public:
   ShowPidCommand(const char* cmd_line);
@@ -69,36 +60,29 @@ class ShowPidCommand : public BuiltInCommand {
   void execute() override;
 };
 
-class JobsList;
-class QuitCommand : public BuiltInCommand {
-// TODO: Add your data members
-public:
-  QuitCommand(const char* cmd_line, JobsList* jobs);
-  virtual ~QuitCommand() {}
+/*
+ * 3. pwd
+ */
+class GetCurrDirCommand : public BuiltInCommand {
+ public:
+  GetCurrDirCommand(const char* cmd_line);
+  virtual ~GetCurrDirCommand() {}
   void execute() override;
 };
 
-
-class JobsList {
- public:
-  class JobEntry {
-   // TODO: Add your data members
-  };
- // TODO: Add your data members
- public:
-  JobsList();
-  ~JobsList();
-  void addJob(Command* cmd, bool isStopped = false);
-  void printJobsList();
-  void killAllJobs();
-  void removeFinishedJobs();
-  JobEntry * getJobById(int jobId);
-  void removeJobById(int jobId);
-  JobEntry * getLastJob(int* lastJobId);
-  JobEntry *getLastStoppedJob(int *jobId);
-  // TODO: Add extra methods or modify exisitng ones as needed
+/*
+ * 4. cd
+ */
+class ChangeDirCommand : public BuiltInCommand {
+// TODO: Add your data members public:
+  ChangeDirCommand(const char* cmd_line, char** plastPwd);
+  virtual ~ChangeDirCommand() {}
+  void execute() override;
 };
 
+/*
+ * 5. jobs
+ */
 class JobsCommand : public BuiltInCommand {
  // TODO: Add your data members
  public:
@@ -107,6 +91,9 @@ class JobsCommand : public BuiltInCommand {
   void execute() override;
 };
 
+/*
+ * 6. fg
+ */
 class ForegroundCommand : public BuiltInCommand {
  // TODO: Add your data members
  public:
@@ -115,11 +102,25 @@ class ForegroundCommand : public BuiltInCommand {
   void execute() override;
 };
 
+/*
+ * 7. bg
+ */
 class BackgroundCommand : public BuiltInCommand {
  // TODO: Add your data members
  public:
   BackgroundCommand(const char* cmd_line, JobsList* jobs);
   virtual ~BackgroundCommand() {}
+  void execute() override;
+};
+
+/*
+ * 8. quit
+ */
+class QuitCommand : public BuiltInCommand {
+// TODO: Add your data members
+public:
+  QuitCommand(const char* cmd_line, JobsList* jobs);
+  virtual ~QuitCommand() {}
   void execute() override;
 };
 
@@ -150,6 +151,9 @@ class SetcoreCommand : public BuiltInCommand {
   void execute() override;
 };
 
+/*
+ * 10. kill
+ */
 class KillCommand : public BuiltInCommand {
   /* Bonus */
  // TODO: Add your data members
@@ -159,7 +163,27 @@ class KillCommand : public BuiltInCommand {
   void execute() override;
 };
 
-class SmallShell { // main class
+class JobsList {
+ public:
+  class JobEntry {
+   // TODO: Add your data members
+  };
+ // TODO: Add your data members
+ public:
+  JobsList();
+  ~JobsList();
+  void addJob(Command* cmd, bool isStopped = false);
+  void printJobsList();
+  void killAllJobs();
+  void removeFinishedJobs();
+  JobEntry * getJobById(int jobId);
+  void removeJobById(int jobId);
+  JobEntry * getLastJob(int* lastJobId);
+  JobEntry *getLastStoppedJob(int *jobId);
+  // TODO: Add extra methods or modify exisitng ones as needed
+};
+
+class SmallShell {
  private:
   // TODO: Add your data members
   SmallShell();
