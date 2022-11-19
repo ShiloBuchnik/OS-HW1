@@ -1,1 +1,3 @@
 1) Write ptr and Read ptr are basically the same ptr, like in C.
+2) Running the same .out often leads to different results, based on permissions of file created. Point to remember when debugging
+Namely, this happened when trying to run the code in Dry question 2.
