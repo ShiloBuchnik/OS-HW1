@@ -51,6 +51,18 @@ class RedirectionCommand : public Command {
 class JobsList;
 
 /*
+ * 1. chprompt
+ */
+class ChangePromptCommand: public BuiltInCommand{
+private:
+    vector<char*> args;
+public:
+    ChangePromptCommand(const char* cmd_line);
+    virtual ~ChangePromptCommand() {}
+    void execute() override;
+};
+
+/*
  * 2. showpid
  */
 class ShowPidCommand : public BuiltInCommand {

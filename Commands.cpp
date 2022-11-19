@@ -9,6 +9,8 @@
 
 using namespace std;
 
+std::string prompt = "smash";
+
 const std::string WHITESPACE = " \n\r\t\f\v";
 
 #if 0
@@ -77,6 +79,30 @@ void _removeBackgroundSign(char* cmd_line) {
   cmd_line[str.find_last_not_of(WHITESPACE, idx) + 1] = 0;
 }
 
+
+
+
+
+
+
+
+
+// Helper functions:
+
+// This function returns a vector containing the words in 'cmd_line'
+vector<char*> getArgs(const char* cmd_line){
+    vector<char*> args = {};
+    char* token = strtok(cmd_line, " "); // This function runs on the string until it sees " ", and returns what it scanned so far
+
+    while (token){
+        args.push_back(toekn);
+        token = strtok(NULL, " "); // It preserves internal state, so now it runs from where it stopped until it sees " " again
+    }
+
+    return args;
+}
+
+
 // TODO: Add your implementation for classes in Commands.h 
 
 SmallShell::SmallShell() {
@@ -89,6 +115,7 @@ SmallShell::~SmallShell() {
 
 /**
 * Creates and returns a pointer to Command class which matches the given command line (cmd_line)
+ *  This is the factory method
 */
 Command * SmallShell::CreateCommand(const char* cmd_line) {
 	// For example:
@@ -125,14 +152,24 @@ void SmallShell::executeCommand(const char *cmd_line) {
 
 /*
  * chprompt command
+ * ChangePromptCommand
  * 
- * formant:
+ * format:
  *    chprompt <new-prompt>
  * description:
  *    allow the user to change the prompt displayed by the smash while waiting for next command
  *    no param - prompt is reset to smash
  *    more than one param - rest is ignored
  */
+
+ChangePromptCommand::ChangePromptCommand(const char* cmd_line):BuiltIncommand(cmd_line){
+    this->args = getArgs(cmd_line);
+}
+
+void ChangePromptCommand::execute(){
+    if (vec.empty()) prompt = "smash";
+    else prompt = args[0];
+}
 
 /*
  * showpid command
