@@ -2,14 +2,15 @@
 #define SMASH_COMMAND_H_
 
 #include <vector>
+#include <time.h>
 
 #define COMMAND_ARGS_MAX_LENGTH (200)
 #define COMMAND_MAX_ARGS (20)
 
 class Command {
-// TODO: Add your data members
+ char* cmd_line;
  public:
-  Command(const char* cmd_line);
+  Command(const char* cmd_line):cmd_line(cmd_line) {}
   virtual ~Command();
   virtual void execute() = 0;
   //virtual void prepare();
@@ -19,7 +20,7 @@ class Command {
 
 class BuiltInCommand : public Command {
  public:
-  BuiltInCommand(const char* cmd_line);
+  BuiltInCommand(const char* cmd_line):Command(cmd_line) {}
   virtual ~BuiltInCommand() {}
 };
 
@@ -55,8 +56,6 @@ class JobsList;
  */
 class ChangePromptCommand: public BuiltInCommand{
 public:
-    vector<char*> args;
-
     ChangePromptCommand(const char* cmd_line);
     virtual ~ChangePromptCommand() {}
     void execute() override;
@@ -87,8 +86,6 @@ class GetCurrDirCommand : public BuiltInCommand {
  */
 class ChangeDirCommand : public BuiltInCommand {
 public:
-  vector<char*> args;
-    
   ChangeDirCommand(const char* cmd_line, char** plastPwd);
   virtual ~ChangeDirCommand() {}
   void execute() override;
@@ -131,8 +128,10 @@ class BackgroundCommand : public BuiltInCommand {
  * 8. quit
  */
 class QuitCommand : public BuiltInCommand {
-// TODO: Add your data members
 public:
+  char* cmd_line;
+  JobsList* jobs;
+
   QuitCommand(const char* cmd_line, JobsList* jobs);
   virtual ~QuitCommand() {}
   void execute() override;
@@ -179,9 +178,13 @@ class KillCommand : public BuiltInCommand {
 
 class JobsList {
  public:
-  class JobEntry {
-   // TODO: Add your data members
-  };
+    class JobEntry {
+        int id;
+        time_t time;
+        char* name;
+    };
+
+    JobEntry* list;
  // TODO: Add your data members
  public:
   JobsList();

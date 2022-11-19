@@ -83,14 +83,9 @@ void _removeBackgroundSign(char* cmd_line) {
 
 
 
-
-
-
-
-
 // Helper functions:
 
-// This function returns a vector containing the words in 'cmd_line'
+/* // This function returns a vector containing the words in 'cmd_line'
 vector<char*> getArgs(const char* cmd_line){
     vector<char*> args = {};
     char* token = strtok(cmd_line, " "); // This function runs on the string until it sees " ", and returns what it scanned so far
@@ -101,7 +96,7 @@ vector<char*> getArgs(const char* cmd_line){
     }
 
     return args;
-}
+} */
 
 
 // TODO: Add your implementation for classes in Commands.h 
@@ -163,10 +158,15 @@ void SmallShell::executeCommand(const char *cmd_line) {
  *    more than one param - rest is ignored
  */
 
-ChangePromptCommand::ChangePromptCommand(const char* cmd_line):BuiltIncommand(cmd_line), args(getArgs(cmd_line)) {}
+ChangePromptCommand::ChangePromptCommand(const char* cmd_line):BuiltIncommand(cmd_line) {
+    _removeBackgroundSign(cmd_line);
+}
 
 void ChangePromptCommand::execute(){
-    if (vec.empty()) prompt = "smash";
+    char** args;
+    size_t size = _parseCommandLine(this->cmd_line, args);
+
+    if (!size) prompt = "smash";
     else prompt = args[0];
 }
 
@@ -233,17 +233,22 @@ void GetCurrDirCommand::execute()
  *    chdir() syscall fails - perror used to print proper error message
  */
 
-ChangeDirCommand::ChangeDirCommand(const char* cmd_line):BuiltInCommand(cmd_line), args(getArgs(cmd_line)) {}
+ChangeDirCommand::ChangeDirCommand(const char* cmd_line):BuiltInCommand(cmd_line){
+    _removeBackgroundSign(cmd_line);
+}
 
 void ChangeDirCommand::execute(){
-    if (args.size() != 1) {
-        cout << "smash error: cd: too many arguments" << endl;
+    char** args;
+    size_t size = _parseCommandLine(this->cmd_line, args);
+
+    if (size != 1) {
+        cerr << "smash error: cd: too many arguments" << endl;
         return;
     }
 
     if (!strcmp(args[0], "-")){ // User entered "-"
         if (!strcmp(prev_dir, "")){ // No previous working directory
-            cout << "smash error: cd: OLDPWD not set" << endl;
+            cerr << "smash error: cd: OLDPWD not set" << endl;
             return;
         }
 
@@ -326,6 +331,39 @@ void ChangeDirCommand::execute(){
  * error handling:
  *    params are ignored
  */
+
+QuitCommand::QuitCommand(const char* cmd_line, JobsList* jobs):BuiltInCommand(cmd_line), jobs(jobs){
+    _removeBackgroundSign(cmd_line);
+}
+
+void QuitCommand::execute(){
+    char** args;
+    size_t size = _parseCommandLine(this->cmd_line, args);
+
+    if (size == 1 && strcmp(args[0], "kill")){
+        // TBC
+    }
+    else{
+        exit(0);
+    }
+
+}
+
+
+/* class ExternalCommand : public Command {
+public:
+    ExternalCommand(const char* cmd_line);
+    virtual ~ExternalCommand() {}
+    void execute() override;
+};*/
+
+
+ExternalCommand::ExternalCommand(const char* cmd_line):Command(cmd_line) {}
+
+void ExternalCommand::execute(){
+
+}
+
 
 // BONUS
 /*
