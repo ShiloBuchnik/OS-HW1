@@ -9,6 +9,8 @@
 
 using namespace std;
 
+const std::string WHITESPACE = " \n\r\t\f\v";
+
 #if 0
 #define FUNC_ENTRY()  \
   cout << __PRETTY_FUNCTION__ << " --> " << endl;
@@ -88,7 +90,7 @@ SmallShell::~SmallShell() {
 /**
 * Creates and returns a pointer to Command class which matches the given command line (cmd_line)
 */
-Command * SmallShell::CreateCommand(const char* cmd_line) { // Basically 'clone', as seen in MATAM
+Command * SmallShell::CreateCommand(const char* cmd_line) {
 	// For example:
 /*
   string cmd_s = _trim(string(cmd_line));
@@ -116,3 +118,162 @@ void SmallShell::executeCommand(const char *cmd_line) {
   // cmd->execute();
   // Please note that you must fork smash process for some commands (e.g., external commands....)
 }
+
+/*
+ * BUILT-IN COMMANDS
+*/
+
+/*
+ * chprompt command
+ * 
+ * formant:
+ *    chprompt <new-prompt>
+ * description:
+ *    allow the user to change the prompt displayed by the smash while waiting for next command
+ *    no param - prompt is reset to smash
+ *    more than one param - rest is ignored
+ */
+
+/*
+ * showpid command
+ * ShowPidCommand
+ * 
+ * formant:
+ *    showpid
+ * description:
+ *    prints the smash pid
+ * error handling:
+ *    params are ignored
+ */
+
+/*
+ * pwd command
+ * GetCurrDirCommand
+ * 
+ * formant:
+ *    pwd
+ * description:
+ *    prints full path of curr working directory
+ *    can use getcwd syscall
+ * error handling:
+ *    params are ignored
+ */
+
+GetCurrDirCommand::GetCurrDirCommand(const char* cmd_line):BuiltInCommand(cmd_line) {}
+
+void GetCurrDirCommand::execute()
+{
+  size_t size = pathconf(".", _PC_PATH_MAX);
+  char* buf = (char*) malloc((size_t)size);
+
+  if (buf != nullptr)
+  {
+    getcwd(buf, size);
+    cout << buf;
+    free(buf);
+  } 
+
+}
+
+/*
+ * cd command
+ * ChangeDirCommand
+ * 
+ * formant:
+ *    cd <new-path>
+ * description:
+ *    changes directory to the new path, relative or full
+ *    if argumant is "-" it will change the current working directory to the last working directory
+ *    can use chdir syscall
+ * error handling:
+ *    >1 args - smash error: cd: too many arguments
+ *    last working dir is empty and "cd -" was called - smash error: cd: OLDPWD not set
+ *    chdir() syscall fails - perror used to print proper error message
+ */
+
+/*
+ * jobs command
+ * JobsCommand
+ * 
+ * formant:
+ *    jobs
+ * description:
+ *    prints the jobs list which contains:
+ *      1. unfinished jobs running in background 
+ *      2. stopped jobs that were stopped using Ctrl+Z
+ *    sorted bt job-id
+ * printing format:
+ *    stopped jobs:
+ *      [<job-id>] <command> : <process id> <seconds elapsed> (stopped)
+ *    else:
+ *      [<job-id>] <command> : <process id> <seconds elapsed>
+ * error handling:
+ *    params are ignored
+ */
+
+/*
+ * fg command
+ * ForegroundCommand
+ * 
+ * formant:
+ *    fg [job-id]
+ * description:
+ *    brings a stopped process or a process that runs in the background to the foreground
+ *    prints the command line of that job along with its pid
+ *    if no arg is specified the job with the maximal job-id in jobs list is selected
+ * side effects:
+ *    job is removed from jobs list
+ * error handling:
+ *    job-id doesn't exist - smash error: fg: job-id <job-id> does not exist
+ *    no args and jobs list is empty - smash error: fg: jobs list is empty
+ *    invalid syntax - smash error: fg: invalid arguments
+ */
+
+/*
+ * bg command
+ * BackgroundCommand
+ * 
+ * formant:
+ *    bg [job-id]
+ * description:
+ *    resumes one of the stopped processes in the background
+ *    prints the command line of that job
+ *    if no arg is specified the last stopped job is selected
+ * side effects:
+ *    job is removed from stopped jobs in list
+ * error handling:
+ *    job-id doesn't exist - smash error: bg: job-id <job-id> does not exist
+ *    job is already running in background (not stopped) - smash error: bg: job-id <job-id> is already running in the background
+ *    no args and no stopped jobs - smash error: bg: there is no stopped jobs to resume
+ *    invalid syntax - smash error: bg: invalid arguments
+ */
+
+/*
+ * quit command
+ * QuitCommand
+ * 
+ * formant:
+ *    quit [kill]
+ * description:
+ *    exists the smash
+ *    if kill arg is specified:
+ *        prit the num of processes/jobs that are to be killed , pids, command-lines
+ *        smash kills all unfinished and stopped jobs before exiting
+ * error handling:
+ *    params are ignored
+ */
+
+// BONUS
+/*
+ * kill command
+ * KillCommand
+ * 
+ * formant:
+ *    kill -<signum> <jobid>
+ * description:
+ *    sends signum to job-id and prints a message reporting that
+ * error handling:
+ *    job-id doesn't exist - smash error: kill: job-id <job-id> does not exist
+ *    invalid syntax - smash error: kill: invalid arguments
+ *    kill() syscall fails - perror used to print proper error message
+ */
