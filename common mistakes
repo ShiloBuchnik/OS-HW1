@@ -1,4 +1,4 @@
 1) Write ptr and Read ptr are basically the same ptr, like in C.
-2) Running the same .out often leads to different results, based on permissions of file created. Point to remember when debugging
-Namely, this happened when trying to run the code in Dry question 2.
-Problem persists even on different machines and different distros. Remember to grant full permissions when CREATING a file
+2) When creating a file (for example with O_CREAT), be sure to give it read-write permissions, otherwise read/write might fail
+This got me fucked up with dry 1 question 2.
+3) Note that the parser returns an array of words, *including* the command name. So arguments starts at 1,2,3.. and not at 0.

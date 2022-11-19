@@ -202,7 +202,9 @@ class JobsList {
 
 class SmallShell {
  private:
-  // TODO: Add your data members
+  string prompt; // For chprompt
+  string prev_dir; // For cd
+
   SmallShell();
  public:
   Command *CreateCommand(const char* cmd_line);

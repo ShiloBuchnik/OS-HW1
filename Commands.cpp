@@ -9,8 +9,7 @@
 
 using namespace std;
 
-string prompt = "smash"; // For chprompt
-string prev_dir = ""; // For cd
+#define MAX_LINE_LEN 80
 
 const std::string WHITESPACE = " \n\r\t\f\v";
 
@@ -101,7 +100,7 @@ vector<char*> getArgs(const char* cmd_line){
 
 // TODO: Add your implementation for classes in Commands.h 
 
-SmallShell::SmallShell() {
+SmallShell::SmallShell():prompt("smash"), prev_dir("") {
 // TODO: add your implementation
 }
 
@@ -165,9 +164,10 @@ ChangePromptCommand::ChangePromptCommand(const char* cmd_line):BuiltIncommand(cm
 void ChangePromptCommand::execute(){
     char** args;
     size_t size = _parseCommandLine(this->cmd_line, args);
+    SmallShell instance = SmallShell::getInstance();
 
-    if (!size) prompt = "smash";
-    else prompt = args[0];
+    if (size == 1) instance.prompt = "smash";
+    else instance.prompt = args[1];
 }
 
 /*
@@ -240,24 +240,31 @@ ChangeDirCommand::ChangeDirCommand(const char* cmd_line):BuiltInCommand(cmd_line
 void ChangeDirCommand::execute(){
     char** args;
     size_t size = _parseCommandLine(this->cmd_line, args);
+    SmallShell instance = SmallShell::getInstance();
 
-    if (size != 1) {
+    if (size == 1){ // No arguments
+        cerr << "smash error:> " << cmd_line << endl;
+    }
+    else if (size > 2) {
         cerr << "smash error: cd: too many arguments" << endl;
         return;
     }
 
-    if (!strcmp(args[0], "-")){ // User entered "-"
-        if (!strcmp(prev_dir, "")){ // No previous working directory
+    if (!strcmp(args[1], "-")){ // User entered "-"
+        if (!strcmp(instance.prev_dir, "")){ // No previous working directory
             cerr << "smash error: cd: OLDPWD not set" << endl;
             return;
         }
 
-        if (chdir(prev_dir) perror("smash error: chdir failed"); // Previous directory is invalid - could it be?
+        if (chdir(instance.prev_dir) perror("smash error: chdir failed"); // Previous directory is invalid - could it be?
     }
-    else{ // User entered a single argument
-        if (chdir(args[0])) perror("smash error: chdir failed"); // Path is invalid
-        else prev_dir = args[0];
-    }
+    else{ // User entered a path
+        char cur_path[MAX_LINE_LEN];
+        getcwd(cur_path, MAX_LINE_LEN);
+
+        if (chdir(args[1])) perror("smash error: chdir failed"); // Path is invalid
+        else instance.prev_dir = cur_path;
+        }
 }
 
 /*
@@ -340,7 +347,7 @@ void QuitCommand::execute(){
     char** args;
     size_t size = _parseCommandLine(this->cmd_line, args);
 
-    if (size == 1 && strcmp(args[0], "kill")){
+    if (size == 2 && strcmp(args[1], "kill")){
         // TBC
     }
     else{
