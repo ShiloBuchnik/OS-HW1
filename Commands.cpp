@@ -9,7 +9,8 @@
 
 using namespace std;
 
-std::string prompt = "smash";
+string prompt = "smash"; // For chprompt
+string prev_dir = ""; // For cd
 
 const std::string WHITESPACE = " \n\r\t\f\v";
 
@@ -162,9 +163,7 @@ void SmallShell::executeCommand(const char *cmd_line) {
  *    more than one param - rest is ignored
  */
 
-ChangePromptCommand::ChangePromptCommand(const char* cmd_line):BuiltIncommand(cmd_line){
-    this->args = getArgs(cmd_line);
-}
+ChangePromptCommand::ChangePromptCommand(const char* cmd_line):BuiltIncommand(cmd_line), args(getArgs(cmd_line)) {}
 
 void ChangePromptCommand::execute(){
     if (vec.empty()) prompt = "smash";
@@ -175,7 +174,7 @@ void ChangePromptCommand::execute(){
  * showpid command
  * ShowPidCommand
  * 
- * formant:
+ * format:
  *    showpid
  * description:
  *    prints the smash pid
@@ -183,11 +182,18 @@ void ChangePromptCommand::execute(){
  *    params are ignored
  */
 
+ShowPidCommand::ShowPidCommand(const char *cmd_line):BuiltIncommand(cmd_line) {}
+
+void ShowPidCommand::execute(){
+    pid_t pid = getpid();
+    cout << "smash pid is " << pid << endl;
+}
+
 /*
  * pwd command
  * GetCurrDirCommand
  * 
- * formant:
+ * format:
  *    pwd
  * description:
  *    prints full path of curr working directory
@@ -208,8 +214,7 @@ void GetCurrDirCommand::execute()
     getcwd(buf, size);
     cout << buf;
     free(buf);
-  } 
-
+  }
 }
 
 /*
@@ -223,10 +228,32 @@ void GetCurrDirCommand::execute()
  *    if argumant is "-" it will change the current working directory to the last working directory
  *    can use chdir syscall
  * error handling:
- *    >1 args - smash error: cd: too many arguments
+ *    more than 1 args - smash error: cd: too many arguments
  *    last working dir is empty and "cd -" was called - smash error: cd: OLDPWD not set
  *    chdir() syscall fails - perror used to print proper error message
  */
+
+ChangeDirCommand::ChangeDirCommand(const char* cmd_line):BuiltInCommand(cmd_line), args(getArgs(cmd_line)) {}
+
+void ChangeDirCommand::execute(){
+    if (args.size() != 1) {
+        cout << "smash error: cd: too many arguments" << endl;
+        return;
+    }
+
+    if (!strcmp(args[0], "-")){ // User entered "-"
+        if (!strcmp(prev_dir, "")){ // No previous working directory
+            cout << "smash error: cd: OLDPWD not set" << endl;
+            return;
+        }
+
+        if (chdir(prev_dir) perror("smash error: chdir failed"); // Previous directory is invalid - could it be?
+    }
+    else{ // User entered a single argument
+        if (chdir(args[0])) perror("smash error: chdir failed"); // Path is invalid
+        else prev_dir = args[0];
+    }
+}
 
 /*
  * jobs command

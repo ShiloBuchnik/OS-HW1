@@ -54,9 +54,9 @@ class JobsList;
  * 1. chprompt
  */
 class ChangePromptCommand: public BuiltInCommand{
-private:
-    vector<char*> args;
 public:
+    vector<char*> args;
+
     ChangePromptCommand(const char* cmd_line);
     virtual ~ChangePromptCommand() {}
     void execute() override;
@@ -86,7 +86,9 @@ class GetCurrDirCommand : public BuiltInCommand {
  * 4. cd
  */
 class ChangeDirCommand : public BuiltInCommand {
-// TODO: Add your data members public:
+public:
+  vector<char*> args;
+    
   ChangeDirCommand(const char* cmd_line, char** plastPwd);
   virtual ~ChangeDirCommand() {}
   void execute() override;
