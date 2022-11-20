@@ -10,6 +10,7 @@
 using namespace std;
 
 #define MAX_LINE_LEN 80
+#define MAX_ARG_NUM 21
 
 const std::string WHITESPACE = " \n\r\t\f\v";
 
@@ -41,6 +42,7 @@ string _trim(const std::string& s)
   return _rtrim(_ltrim(s));
 }
 
+// Note to self: this returns an array of allocated strings, each of them is null-terminated
 int _parseCommandLine(const char* cmd_line, char** args) {
   FUNC_ENTRY()
   int i = 0;
@@ -96,6 +98,21 @@ vector<char*> getArgs(const char* cmd_line){
 
     return args;
 } */
+
+// Args is an array of pointers. This function frees said pointers, and then frees the array itself
+void freeArgs(char** args){
+    for(int i = 0; i < MAX_ARG_NUM; i++) free(args[i]);
+    free(args);
+}
+
+// Checks if a command contains '*' or '?'
+bool isComplexCommand(char** args){
+    for(int i = 0; i < MAX_ARG_NUM; i++){
+        if (strchr(args[i], '*') || strchr(args[i], '?')) return true;
+    }
+
+    return false;
+}
 
 
 // TODO: Add your implementation for classes in Commands.h 
@@ -162,12 +179,14 @@ ChangePromptCommand::ChangePromptCommand(const char* cmd_line):BuiltIncommand(cm
 }
 
 void ChangePromptCommand::execute(){
-    char** args;
+    char** args = (char**) malloc(MAX_ARG_NUM * sizeof(char*));
     size_t size = _parseCommandLine(this->cmd_line, args);
     SmallShell instance = SmallShell::getInstance();
 
     if (size == 1) instance.prompt = "smash";
     else instance.prompt = args[1];
+
+    freeArgs(args);
 }
 
 /*
@@ -238,7 +257,7 @@ ChangeDirCommand::ChangeDirCommand(const char* cmd_line):BuiltInCommand(cmd_line
 }
 
 void ChangeDirCommand::execute(){
-    char** args;
+    char** args = (char**) malloc(MAX_ARG_NUM * sizeof(char*));
     size_t size = _parseCommandLine(this->cmd_line, args);
     SmallShell instance = SmallShell::getInstance();
 
@@ -265,6 +284,8 @@ void ChangeDirCommand::execute(){
         if (chdir(args[1])) perror("smash error: chdir failed"); // Path is invalid
         else instance.prev_dir = cur_path;
         }
+
+    freeArgs(args);
 }
 
 /*
@@ -344,31 +365,64 @@ QuitCommand::QuitCommand(const char* cmd_line, JobsList* jobs):BuiltInCommand(cm
 }
 
 void QuitCommand::execute(){
-    char** args;
+    char** args = (char**) malloc(MAX_ARG_NUM * sizeof(char*));
     size_t size = _parseCommandLine(this->cmd_line, args);
 
     if (size == 2 && strcmp(args[1], "kill")){
         // TBC
     }
-    else{
-        exit(0);
-    }
+    else exit(0);
 
+    freeArgs(args);
 }
 
 
-/* class ExternalCommand : public Command {
-public:
-    ExternalCommand(const char* cmd_line);
-    virtual ~ExternalCommand() {}
-    void execute() override;
-};*/
 
+/// External commands ///
 
 ExternalCommand::ExternalCommand(const char* cmd_line):Command(cmd_line) {}
 
 void ExternalCommand::execute(){
+    char** args = (char**) malloc(MAX_ARG_NUM * sizeof(char*));
+    size_t size = _parseCommandLine(this->cmd_line, args);
+    char* path = (char*) malloc(MAX_LINE_LEN * sizeof(char));
+    strcpy(path, "/bin/\0");
 
+    pid_t pid = fork();
+    if (pid == 0) { // Son, this is the actual external command
+        if (setpgrp()) { // Unrelated to the logic, ignore it
+            perror("smash error: setpgrp failed");
+            return;
+        }
+
+        if (isComplexCommand(args)) { // Complex command
+            strcat(path, "bash"); // Setting the path to be "/bin/bash\0"
+
+            char* new_args[] = {"bash", "-c", args, nullptr}; // A quick hack to get '-c' as an argument, without copying everything
+
+            if (execv(path, new_args)) {
+                perror("smash error: execv failed");
+                return;
+            }
+        }
+        else { // Simple command
+            strcat(path, args[0]); // Setting the path to be "/bin/<command>\0"
+
+            if (execv(path, args)) {
+                perror("smash error: execv failed");
+                return;
+            }
+        }
+    }
+    else{ // Father, this is the smash shell
+        if (waitpid(pid, NULL, 0) == -1){ // In this case the process is in the foreground, so we wait for it. *Need to add background*
+            perror("smash error: waitpid failed");
+            return;
+        }
+    }
+
+    freeArgs(args);
+    free(path);
 }
 
 

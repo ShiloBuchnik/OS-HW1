@@ -202,11 +202,10 @@ class JobsList {
 
 class SmallShell {
  private:
-  string prompt; // For chprompt
-  string prev_dir; // For cd
-
   SmallShell();
  public:
+  string prompt; // For chprompt
+  string prev_dir; // For cd
   Command *CreateCommand(const char* cmd_line);
   SmallShell(SmallShell const&)      = delete; // disable copy ctor
   void operator=(SmallShell const&)  = delete; // disable = operator
