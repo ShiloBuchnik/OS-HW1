@@ -392,7 +392,7 @@ void ExternalCommand::execute(){
     if (pid == 0) { // Son, this is the actual external command
         if (setpgrp()) { // Unrelated to the logic, ignore it
             perror("smash error: setpgrp failed");
-            return;
+            exit(-1);
         }
 
         if (isComplexCommand(args)) { // Complex command
@@ -402,7 +402,7 @@ void ExternalCommand::execute(){
 
             if (execv(path, new_args)) {
                 perror("smash error: execv failed");
-                return;
+                exit(-1);
             }
         }
         else { // Simple command
@@ -410,7 +410,7 @@ void ExternalCommand::execute(){
 
             if (execv(path, args)) {
                 perror("smash error: execv failed");
-                return;
+                exit(-1);
             }
         }
     }
