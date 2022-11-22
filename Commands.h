@@ -2,7 +2,8 @@
 #define SMASH_COMMAND_H_
 
 #include <vector>
-#include <time.h>
+#include <ctime>
+#include <sys/types.h>
 
 #define COMMAND_ARGS_MAX_LENGTH (200)
 #define COMMAND_MAX_ARGS (20)
@@ -16,6 +17,9 @@ class Command {
   //virtual void prepare();
   //virtual void cleanup();
   // TODO: Add your extra methods if needed
+  const char* get_cmd_line(){
+      return cmd_line;
+  }
 };
 
 class BuiltInCommand : public Command {
@@ -179,20 +183,40 @@ class KillCommand : public BuiltInCommand {
 class JobsList {
  public:
     class JobEntry {
+
+        /*
+         * job id is assigned by the shell once it's inserted to the jobs list
+         * time is seconds elapsed since job was inserted to the jobs list (?)
+         * name is the job's command
+         * pid is assigned to the process by the kernel
+         */
+
         int id;
         time_t time;
         char* name;
+        pid_t pid;
+        bool stopped;
+
+        /*
+         * Constructor
+         */
+        JobEntry(int id, pid_t pid, time_t time, char& name, bool stopped);
     };
 
-    JobEntry* list;
+    /*
+     * jobs list is a vector made of jobEntry elements
+     */
+    std::vector<JobEntry> jobs_list;
+    int maxID; //for bg command
+
  // TODO: Add your data members
  public:
   JobsList();
-  ~JobsList();
-  void addJob(Command* cmd, bool isStopped = false);
+  ~JobsList() = default;
+  void addJob(Command* cmd, bool isStopped = false); //TODO
   void printJobsList();
   void killAllJobs();
-  void removeFinishedJobs();
+  void removeFinishedJobs();                        //TODO
   JobEntry * getJobById(int jobId);
   void removeJobById(int jobId);
   JobEntry * getLastJob(int* lastJobId);
@@ -218,6 +242,8 @@ class SmallShell {
   ~SmallShell();
   void executeCommand(const char* cmd_line);
   // TODO: add extra methods as needed
+
+  static JobsList list;
 };
 
 #endif //SMASH_COMMAND_H_

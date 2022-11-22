@@ -181,7 +181,7 @@ ChangePromptCommand::ChangePromptCommand(const char* cmd_line):BuiltIncommand(cm
 void ChangePromptCommand::execute(){
     char** args = (char**) malloc(MAX_ARG_NUM * sizeof(char*));
     size_t size = _parseCommandLine(this->cmd_line, args);
-    SmallShell instance = SmallShell::getInstance();
+    SmallShell& instance = SmallShell::getInstance();
 
     if (size == 1) instance.prompt = "smash";
     else instance.prompt = args[1];
@@ -259,7 +259,7 @@ ChangeDirCommand::ChangeDirCommand(const char* cmd_line):BuiltInCommand(cmd_line
 void ChangeDirCommand::execute(){
     char** args = (char**) malloc(MAX_ARG_NUM * sizeof(char*));
     size_t size = _parseCommandLine(this->cmd_line, args);
-    SmallShell instance = SmallShell::getInstance();
+    SmallShell& instance = SmallShell::getInstance();
 
     if (size == 1){ // No arguments
         cerr << "smash error:> " << cmd_line << endl;
@@ -440,3 +440,121 @@ void ExternalCommand::execute(){
  *    invalid syntax - smash error: kill: invalid arguments
  *    kill() syscall fails - perror used to print proper error message
  */
+
+/*
+ *  JOBS LIST FUNCTIONS
+ */
+
+/*
+ * constructor job entries
+ */
+JobsList::JobEntry::JobEntry(int id, int pid, size_t time, char &name, bool stopped) : id(id), pid(pid), time(time),
+                                                                                       name(name),
+                                                                                       stopped(stopped)
+{}
+
+/*
+ * constructor jobs list
+ */
+JobsList::JobsList() : jobs_list(), maxID(1)
+{}
+
+/*
+ * add job to the jobs list; differentiate between jobs in background and jobs that have been stopped
+ * //TODO
+ */
+void JobsList::addJob(Command *cmd, bool isStopped) {
+    //before adding new jobs to the list, finished jobs are deleted from list
+    removeFinishedJobs();
+    char* name (cmd->get_cmd_line());
+
+    SmallShell& instance = SmallShell::getInstance();
+
+}
+
+/*
+ * print jobs list in format (page 6)
+ * used in jobs command
+ */
+void JobsList::printJobsList() {
+    SmallShell& instance = SmallShell::getInstance();
+    //before printing jobs list, finished jobs are deleted from list
+    instance.list.removeFinishedJobs();
+    for (auto & j : jobs_list) {
+        if (j.stopped == true){
+            //[<job-id>] <command> : <process id> <seconds elapsed> (stopped)
+            cout << "[" << j.id << "] " << j.name << " : " << j.pid << " " <<
+                    difftime(time(nullptr), j.time) << "secs (stopped)" << endl;
+        } else {
+            //[<job-id>] <command> : <process id> <seconds elapsed>
+            cout << "[" << j.id << "] " << j.name << " : " << j.pid << " " <<
+                 difftime(time(nullptr), j.time) << "secs (stopped)" << endl;
+        }
+    }
+}
+
+/*
+ * kills all jobs. used in quit command if kill is specified and prints jobs killed in format (page 9)
+ */
+void JobsList::killAllJobs() {
+    SmallShell& instance = SmallShell::getInstance();
+    for(auto & j : jobs_list) {
+        cout << j.pid << ": " << j.name << endl;
+        kill(j.pid, SIGKILL);
+    }
+}
+
+/*
+ * removes finished jobs from list
+ */
+void JobsList::removeFinishedJobs() {
+    //not sure
+}
+
+/*
+ * return job with job id
+ */
+JobsList::JobEntry * JobsList::getJobById(int jobId) {
+    for(auto & j : jobs_list){
+        if (j.id == jobId)
+            return &j;
+    }
+}
+
+void JobsList::removeJobById(int jobId) {
+    for(auto & j : jobs_list) {
+        if (j.id == jobId){
+            jobs_list.erase(j);
+            break;
+        }
+    }
+}
+
+JobsList::JobEntry * JobsList::getLastJob(int *lastJobId) {
+    int max = -1;
+    for (auto & j : jobs_list){
+        if (j.id > max)
+            max = j.id;
+    }
+    *lastJobId = max;
+    return getJobById(max);
+}
+
+JobsList::JobEntry * JobsList::getLastStoppedJob(int *jobId) {
+    int max = -1;
+    for (auto & j : jobs_list){
+        if(j.stopped == true)
+            max = j.id;
+    }
+    *jobId = max;
+    return getJobById(max);
+}
+
+
+
+
+
+
+
+
+
