@@ -251,12 +251,12 @@ public:
 
     ~JobsList() = default;
 
-    void addJob(Command *cmd, bool isStopped = false); //TODO
+    void addJob(Command *cmd, bool last_fg = false, bool isStopped = false);
     void printJobsList();
 
     void killAllJobs();
 
-    void removeFinishedJobs();                        //TODO
+    void removeFinishedJobs();
     JobEntry *getJobById(int jobId);
 
     void removeJobById(int jobId);
@@ -275,6 +275,7 @@ public:
     string prompt; // For chprompt
     string prev_dir; // For cd
     Command *CreateCommand(const char *cmd_line);
+    bool last_fg;
 
     SmallShell(SmallShell const &) = delete; // disable copy ctor
     void operator=(SmallShell const &) = delete; // disable = operator

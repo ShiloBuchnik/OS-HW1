@@ -447,18 +447,19 @@ JobEntry::JobEntry(int id, int pid, size_t time, char &name, bool stopped): id(i
 /*
  * constructor jobs list
  */
-JobsList::JobsList(): jobs_map(), maxID(1), {}
+JobsList::JobsList(): jobs_map(), maxID(1) {}
 
 /*
  * add job to the jobs list; differentiate between jobs in background and jobs that have been stopped
  * //TODO
  */
-void JobsList::addJob(Command *cmd, bool isStopped) {
+void JobsList::addJob(Command *cmd, bool last_fg, bool isStopped) {
     //before adding new jobs to the list, finished jobs are deleted from list
     removeFinishedJobs();
     char *name(cmd->get_cmd_line());
 
     SmallShell &instance = SmallShell::getInstance();
+    instance.smash_jobs_map.emplace()
 
 }
 
@@ -471,7 +472,7 @@ void JobsList::printJobsList() {
     //before printing jobs list, finished jobs are deleted from list
     instance.smash_jobs_map.removeFinishedJobs();
     for (auto &j: jobs_map) {
-        if (j.second.stopped == true) {
+        if (j.second.stopped) {
             //[<job-id>] <command> : <process id> <seconds elapsed> (stopped)
             cout << "[" << j.second.id << "] " << j.second.name << " : " << j.second.pid << " " <<
                  difftime(time(nullptr), j.second.time) << "secs (stopped)" << endl;
@@ -497,18 +498,20 @@ void JobsList::killAllJobs() { // remember to free entries
 /*
  * removes finished jobs from list
  */
-void JobsList::removeFinishedJobs() {
+void JobsList::removeFinishedJobs() { // Waiting for completion of pipe
     //not sure
 }
 
 /*
  * return job with job id
  */
-JobsList::JobEntry *JobsList::getJobById(int jobId) {
+JobEntry *JobsList::getJobById(int jobId) {
     for (auto &j: jobs_map) {
         if (j.second.id == jobId)
-            return &j.second;
+            return j.second;
     }
+
+    return -1;
 }
 
 void JobsList::removeJobById(int jobId) {
@@ -520,17 +523,14 @@ void JobsList::removeJobById(int jobId) {
     }
 }
 
-JobsList::JobEntry *JobsList::getLastJob(int *lastJobId) {
-    int max = -1;
-    for (auto &j: jobs_map) {
-        if (j.second.id > max)
-            max = j.second.id;
-    }
-    *lastJobId = max;
-    return getJobById(max);
+JobEntry *JobsList::getLastJob(int *lastJobId) {
+    auto& end = jobs_map.end();
+    *lastJobId = end.second.id;
+
+    return getJobById(lastJobId);
 }
 
-JobsList::JobEntry *JobsList::getLastStoppedJob(int *jobId) {
+JobEntry *JobsList::getLastStoppedJob(int *jobId) {
     int max = -1;
     for (auto &j: jobs_map) {
         if (j.second.stopped == true)
@@ -539,12 +539,4 @@ JobsList::JobEntry *JobsList::getLastStoppedJob(int *jobId) {
     *jobId = max;
     return getJobById(max);
 }
-
-
-
-
-
-
-
-
 
