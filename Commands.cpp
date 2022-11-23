@@ -25,60 +25,57 @@ const std::string WHITESPACE = " \n\r\t\f\v";
 #define FUNC_EXIT()
 #endif
 
-string _ltrim(const std::string& s)
-{
-  size_t start = s.find_first_not_of(WHITESPACE);
-  return (start == std::string::npos) ? "" : s.substr(start);
+string _ltrim(const std::string &s) {
+    size_t start = s.find_first_not_of(WHITESPACE);
+    return (start == std::string::npos) ? "" : s.substr(start);
 }
 
-string _rtrim(const std::string& s)
-{
-  size_t end = s.find_last_not_of(WHITESPACE);
-  return (end == std::string::npos) ? "" : s.substr(0, end + 1);
+string _rtrim(const std::string &s) {
+    size_t end = s.find_last_not_of(WHITESPACE);
+    return (end == std::string::npos) ? "" : s.substr(0, end + 1);
 }
 
-string _trim(const std::string& s)
-{
-  return _rtrim(_ltrim(s));
+string _trim(const std::string &s) {
+    return _rtrim(_ltrim(s));
 }
 
 // Note to self: this returns an array of allocated strings, each of them is null-terminated
-int _parseCommandLine(const char* cmd_line, char** args) {
-  FUNC_ENTRY()
-  int i = 0;
-  std::istringstream iss(_trim(string(cmd_line)).c_str());
-  for(std::string s; iss >> s; ) {
-    args[i] = (char*)malloc(s.length()+1);
-    memset(args[i], 0, s.length()+1);
-    strcpy(args[i], s.c_str());
-    args[++i] = NULL;
-  }
-  return i;
+int _parseCommandLine(const char *cmd_line, char **args) {
+    FUNC_ENTRY()
+    int i = 0;
+    std::istringstream iss(_trim(string(cmd_line)).c_str());
+    for (std::string s; iss >> s;) {
+        args[i] = (char *) malloc(s.length() + 1);
+        memset(args[i], 0, s.length() + 1);
+        strcpy(args[i], s.c_str());
+        args[++i] = NULL;
+    }
+    return i;
 
-  FUNC_EXIT()
+    FUNC_EXIT()
 }
 
-bool _isBackgroundComamnd(const char* cmd_line) {
-  const string str(cmd_line);
-  return str[str.find_last_not_of(WHITESPACE)] == '&';
+bool _isBackgroundComamnd(const char *cmd_line) {
+    const string str(cmd_line);
+    return str[str.find_last_not_of(WHITESPACE)] == '&';
 }
 
-void _removeBackgroundSign(char* cmd_line) {
-  const string str(cmd_line);
-  // find last character other than spaces
-  unsigned int idx = str.find_last_not_of(WHITESPACE);
-  // if all characters are spaces then return
-  if (idx == string::npos) {
-    return;
-  }
-  // if the command line does not end with & then return
-  if (cmd_line[idx] != '&') {
-    return;
-  }
-  // replace the & (background sign) with space and then remove all tailing spaces.
-  cmd_line[idx] = ' ';
-  // truncate the command line string up to the last non-space character
-  cmd_line[str.find_last_not_of(WHITESPACE, idx) + 1] = 0;
+void _removeBackgroundSign(char *cmd_line) {
+    const string str(cmd_line);
+    // find last character other than spaces
+    unsigned int idx = str.find_last_not_of(WHITESPACE);
+    // if all characters are spaces then return
+    if (idx == string::npos) {
+        return;
+    }
+    // if the command line does not end with & then return
+    if (cmd_line[idx] != '&') {
+        return;
+    }
+    // replace the & (background sign) with space and then remove all tailing spaces.
+    cmd_line[idx] = ' ';
+    // truncate the command line string up to the last non-space character
+    cmd_line[str.find_last_not_of(WHITESPACE, idx) + 1] = 0;
 }
 
 
@@ -100,14 +97,14 @@ vector<char*> getArgs(const char* cmd_line){
 } */
 
 // Args is an array of pointers. This function frees said pointers, and then frees the array itself
-void freeArgs(char** args){
-    for(int i = 0; i < MAX_ARG_NUM; i++) free(args[i]);
+void freeArgs(char **args) {
+    for (int i = 0; i < MAX_ARG_NUM; i++) free(args[i]);
     free(args);
 }
 
 // Checks if a command contains '*' or '?'
-bool isComplexCommand(char** args){
-    for(int i = 0; i < MAX_ARG_NUM; i++){
+bool isComplexCommand(char **args) {
+    for (int i = 0; i < MAX_ARG_NUM; i++) {
         if (strchr(args[i], '*') || strchr(args[i], '?')) return true;
     }
 
@@ -117,7 +114,7 @@ bool isComplexCommand(char** args){
 
 // TODO: Add your implementation for classes in Commands.h 
 
-SmallShell::SmallShell():prompt("smash"), prev_dir("") {
+SmallShell::SmallShell() : prompt("smash"), prev_dir("") {
 // TODO: add your implementation
 }
 
@@ -129,8 +126,8 @@ SmallShell::~SmallShell() {
 * Creates and returns a pointer to Command class which matches the given command line (cmd_line)
  *  This is the factory method
 */
-Command * SmallShell::CreateCommand(const char* cmd_line) {
-	// For example:
+Command *SmallShell::CreateCommand(const char *cmd_line) {
+    // For example:
 /*
   string cmd_s = _trim(string(cmd_line));
   string firstWord = cmd_s.substr(0, cmd_s.find_first_of(" \n"));
@@ -147,15 +144,15 @@ Command * SmallShell::CreateCommand(const char* cmd_line) {
     return new ExternalCommand(cmd_line);
   }
   */
-  return nullptr;
+    return nullptr;
 }
 
 void SmallShell::executeCommand(const char *cmd_line) {
-  // TODO: Add your implementation here
-  // for example:
-  // Command* cmd = CreateCommand(cmd_line);
-  // cmd->execute();
-  // Please note that you must fork smash process for some commands (e.g., external commands....)
+    // TODO: Add your implementation here
+    // for example:
+    // Command* cmd = CreateCommand(cmd_line);
+    // cmd->execute();
+    // Please note that you must fork smash process for some commands (e.g., external commands....)
 }
 
 /*
@@ -174,14 +171,14 @@ void SmallShell::executeCommand(const char *cmd_line) {
  *    more than one param - rest is ignored
  */
 
-ChangePromptCommand::ChangePromptCommand(const char* cmd_line):BuiltIncommand(cmd_line) {
+ChangePromptCommand::ChangePromptCommand(const char *cmd_line) : BuiltIncommand(cmd_line) {
     _removeBackgroundSign(cmd_line);
 }
 
-void ChangePromptCommand::execute(){
-    char** args = (char**) malloc(MAX_ARG_NUM * sizeof(char*));
+void ChangePromptCommand::execute() {
+    char **args = (char **) malloc(MAX_ARG_NUM * sizeof(char *));
     size_t size = _parseCommandLine(this->cmd_line, args);
-    SmallShell& instance = SmallShell::getInstance();
+    SmallShell &instance = SmallShell::getInstance();
 
     if (size == 1) instance.prompt = "smash";
     else instance.prompt = args[1];
@@ -201,9 +198,9 @@ void ChangePromptCommand::execute(){
  *    params are ignored
  */
 
-ShowPidCommand::ShowPidCommand(const char *cmd_line):BuiltIncommand(cmd_line) {}
+ShowPidCommand::ShowPidCommand(const char *cmd_line) : BuiltIncommand(cmd_line) {}
 
-void ShowPidCommand::execute(){
+void ShowPidCommand::execute() {
     pid_t pid = getpid();
     cout << "smash pid is " << pid << endl;
 }
@@ -221,19 +218,17 @@ void ShowPidCommand::execute(){
  *    params are ignored
  */
 
-GetCurrDirCommand::GetCurrDirCommand(const char* cmd_line):BuiltInCommand(cmd_line) {}
+GetCurrDirCommand::GetCurrDirCommand(const char *cmd_line) : BuiltInCommand(cmd_line) {}
 
-void GetCurrDirCommand::execute()
-{
-  size_t size = pathconf(".", _PC_PATH_MAX);
-  char* buf = (char*) malloc((size_t)size);
+void GetCurrDirCommand::execute() {
+    size_t size = pathconf(".", _PC_PATH_MAX);
+    char *buf = (char *) malloc((size_t) size);
 
-  if (buf != nullptr)
-  {
-    getcwd(buf, size);
-    cout << buf;
-    free(buf);
-  }
+    if (buf != nullptr) {
+        getcwd(buf, size);
+        cout << buf;
+        free(buf);
+    }
 }
 
 /*
@@ -252,38 +247,37 @@ void GetCurrDirCommand::execute()
  *    chdir() syscall fails - perror used to print proper error message
  */
 
-ChangeDirCommand::ChangeDirCommand(const char* cmd_line):BuiltInCommand(cmd_line){
+ChangeDirCommand::ChangeDirCommand(const char *cmd_line) : BuiltInCommand(cmd_line) {
     _removeBackgroundSign(cmd_line);
 }
 
-void ChangeDirCommand::execute(){
-    char** args = (char**) malloc(MAX_ARG_NUM * sizeof(char*));
+void ChangeDirCommand::execute() {
+    char **args = (char **) malloc(MAX_ARG_NUM * sizeof(char *));
     size_t size = _parseCommandLine(this->cmd_line, args);
-    SmallShell& instance = SmallShell::getInstance();
+    SmallShell &instance = SmallShell::getInstance();
 
-    if (size == 1){ // No arguments
+    if (size == 1) { // No arguments
         cerr << "smash error:> " << cmd_line << endl;
-    }
-    else if (size > 2) {
+    } else if (size > 2) {
         cerr << "smash error: cd: too many arguments" << endl;
         return;
     }
 
-    if (!strcmp(args[1], "-")){ // User entered "-"
-        if (!strcmp(instance.prev_dir, "")){ // No previous working directory
+    if (!strcmp(args[1], "-")) { // User entered "-"
+        if (!strcmp(instance.prev_dir, "")) { // No previous working directory
             cerr << "smash error: cd: OLDPWD not set" << endl;
             return;
         }
 
-        if (chdir(instance.prev_dir) perror("smash error: chdir failed"); // Previous directory is invalid - could it be?
-    }
-    else{ // User entered a path
+        if (chdir(instance.prev_dir)
+            perror("smash error: chdir failed"); // Previous directory is invalid - could it be?
+    } else { // User entered a path
         char cur_path[MAX_LINE_LEN];
         getcwd(cur_path, MAX_LINE_LEN);
 
         if (chdir(args[1])) perror("smash error: chdir failed"); // Path is invalid
         else instance.prev_dir = cur_path;
-        }
+    }
 
     freeArgs(args);
 }
@@ -360,18 +354,17 @@ void ChangeDirCommand::execute(){
  *    params are ignored
  */
 
-QuitCommand::QuitCommand(const char* cmd_line, JobsList* jobs):BuiltInCommand(cmd_line), jobs(jobs){
+QuitCommand::QuitCommand(const char *cmd_line, JobsList *jobs) : BuiltInCommand(cmd_line), jobs(jobs) {
     _removeBackgroundSign(cmd_line);
 }
 
-void QuitCommand::execute(){
-    char** args = (char**) malloc(MAX_ARG_NUM * sizeof(char*));
+void QuitCommand::execute() {
+    char **args = (char **) malloc(MAX_ARG_NUM * sizeof(char *));
     size_t size = _parseCommandLine(this->cmd_line, args);
 
-    if (size == 2 && strcmp(args[1], "kill")){
+    if (size == 2 && strcmp(args[1], "kill")) {
         // TBC
-    }
-    else exit(0);
+    } else exit(0);
 
     freeArgs(args);
 }
@@ -380,12 +373,12 @@ void QuitCommand::execute(){
 
 /// External commands ///
 
-ExternalCommand::ExternalCommand(const char* cmd_line):Command(cmd_line) {}
+ExternalCommand::ExternalCommand(const char *cmd_line) : Command(cmd_line) {}
 
-void ExternalCommand::execute(){
-    char** args = (char**) malloc(MAX_ARG_NUM * sizeof(char*));
+void ExternalCommand::execute() {
+    char **args = (char **) malloc(MAX_ARG_NUM * sizeof(char *));
     size_t size = _parseCommandLine(this->cmd_line, args);
-    char* path = (char*) malloc(MAX_LINE_LEN * sizeof(char));
+    char *path = (char *) malloc(MAX_LINE_LEN * sizeof(char));
     strcpy(path, "/bin/\0");
 
     pid_t pid = fork();
@@ -398,14 +391,14 @@ void ExternalCommand::execute(){
         if (isComplexCommand(args)) { // Complex command
             strcat(path, "bash"); // Setting the path to be "/bin/bash\0"
 
-            char* new_args[] = {"bash", "-c", args, nullptr}; // A quick hack to get '-c' as an argument, without copying everything
+            char *new_args[] = {"bash", "-c", args,
+                                nullptr}; // A quick hack to get '-c' as an argument, without copying everything
 
             if (execv(path, new_args)) {
                 perror("smash error: execv failed");
                 exit(-1);
             }
-        }
-        else { // Simple command
+        } else { // Simple command
             strcat(path, args[0]); // Setting the path to be "/bin/<command>\0"
 
             if (execv(path, args)) {
@@ -413,9 +406,9 @@ void ExternalCommand::execute(){
                 exit(-1);
             }
         }
-    }
-    else{ // Father, this is the smash shell
-        if (waitpid(pid, NULL, 0) == -1){ // In this case the process is in the foreground, so we wait for it. *Need to add background*
+    } else { // Father, this is the smash shell
+        if (waitpid(pid, NULL, 0) ==
+            -1) { // In this case the process is in the foreground, so we wait for it. *Need to add background*
             perror("smash error: waitpid failed");
             return;
         }
@@ -450,14 +443,12 @@ void ExternalCommand::execute(){
  */
 JobsList::JobEntry::JobEntry(int id, int pid, size_t time, char &name, bool stopped) : id(id), pid(pid), time(time),
                                                                                        name(name),
-                                                                                       stopped(stopped)
-{}
+                                                                                       stopped(stopped) {}
 
 /*
  * constructor jobs list
  */
-JobsList::JobsList() : jobs_list(), maxID(1)
-{}
+JobsList::JobsList() : jobs_list(), maxID(1), {}
 
 /*
  * add job to the jobs list; differentiate between jobs in background and jobs that have been stopped
@@ -466,9 +457,9 @@ JobsList::JobsList() : jobs_list(), maxID(1)
 void JobsList::addJob(Command *cmd, bool isStopped) {
     //before adding new jobs to the list, finished jobs are deleted from list
     removeFinishedJobs();
-    char* name (cmd->get_cmd_line());
+    char *name(cmd->get_cmd_line());
 
-    SmallShell& instance = SmallShell::getInstance();
+    SmallShell &instance = SmallShell::getInstance();
 
 }
 
@@ -477,18 +468,18 @@ void JobsList::addJob(Command *cmd, bool isStopped) {
  * used in jobs command
  */
 void JobsList::printJobsList() {
-    SmallShell& instance = SmallShell::getInstance();
+    SmallShell &instance = SmallShell::getInstance();
     //before printing jobs list, finished jobs are deleted from list
     instance.list.removeFinishedJobs();
-    for (auto & j : jobs_list) {
-        if (j.stopped == true){
+    for (auto &j: jobs_list) {
+        if (j.stopped == true) {
             //[<job-id>] <command> : <process id> <seconds elapsed> (stopped)
             cout << "[" << j.id << "] " << j.name << " : " << j.pid << " " <<
-                    difftime(time(nullptr), j.time) << "secs (stopped)" << endl;
+                 difftime(time(nullptr), j.time) << "secs (stopped)" << endl;
         } else {
             //[<job-id>] <command> : <process id> <seconds elapsed>
             cout << "[" << j.id << "] " << j.name << " : " << j.pid << " " <<
-                 difftime(time(nullptr), j.time) << "secs (stopped)" << endl;
+                 difftime(time(nullptr), j.time) << "secs" << endl;
         }
     }
 }
@@ -496,9 +487,9 @@ void JobsList::printJobsList() {
 /*
  * kills all jobs. used in quit command if kill is specified and prints jobs killed in format (page 9)
  */
-void JobsList::killAllJobs() {
-    SmallShell& instance = SmallShell::getInstance();
-    for(auto & j : jobs_list) {
+void JobsList::killAllJobs() { // remember to free entries
+    SmallShell &instance = SmallShell::getInstance();
+    for (auto &j: jobs_list) {
         cout << j.pid << ": " << j.name << endl;
         kill(j.pid, SIGKILL);
     }
@@ -514,25 +505,25 @@ void JobsList::removeFinishedJobs() {
 /*
  * return job with job id
  */
-JobsList::JobEntry * JobsList::getJobById(int jobId) {
-    for(auto & j : jobs_list){
+JobsList::JobEntry *JobsList::getJobById(int jobId) {
+    for (auto &j: jobs_list) {
         if (j.id == jobId)
             return &j;
     }
 }
 
 void JobsList::removeJobById(int jobId) {
-    for(auto & j : jobs_list) {
-        if (j.id == jobId){
+    for (auto &j: jobs_list) {
+        if (j.id == jobId) {
             jobs_list.erase(j);
             break;
         }
     }
 }
 
-JobsList::JobEntry * JobsList::getLastJob(int *lastJobId) {
+JobsList::JobEntry *JobsList::getLastJob(int *lastJobId) {
     int max = -1;
-    for (auto & j : jobs_list){
+    for (auto &j: jobs_list) {
         if (j.id > max)
             max = j.id;
     }
@@ -540,10 +531,10 @@ JobsList::JobEntry * JobsList::getLastJob(int *lastJobId) {
     return getJobById(max);
 }
 
-JobsList::JobEntry * JobsList::getLastStoppedJob(int *jobId) {
+JobsList::JobEntry *JobsList::getLastStoppedJob(int *jobId) {
     int max = -1;
-    for (auto & j : jobs_list){
-        if(j.stopped == true)
+    for (auto &j: jobs_list) {
+        if (j.stopped == true)
             max = j.id;
     }
     *jobId = max;
