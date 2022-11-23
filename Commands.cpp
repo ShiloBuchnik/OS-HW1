@@ -441,14 +441,13 @@ void ExternalCommand::execute() {
 /*
  * constructor job entries
  */
-JobsList::JobEntry::JobEntry(int id, int pid, size_t time, char &name, bool stopped) : id(id), pid(pid), time(time),
+JobEntry::JobEntry(int id, int pid, size_t time, char &name, bool stopped): id(id), pid(pid), time(time),
                                                                                        name(name),
                                                                                        stopped(stopped) {}
-
 /*
  * constructor jobs list
  */
-JobsList::JobsList() : jobs_list(), maxID(1), {}
+JobsList::JobsList(): jobs_map(), maxID(1), {}
 
 /*
  * add job to the jobs list; differentiate between jobs in background and jobs that have been stopped
@@ -470,16 +469,16 @@ void JobsList::addJob(Command *cmd, bool isStopped) {
 void JobsList::printJobsList() {
     SmallShell &instance = SmallShell::getInstance();
     //before printing jobs list, finished jobs are deleted from list
-    instance.list.removeFinishedJobs();
-    for (auto &j: jobs_list) {
-        if (j.stopped == true) {
+    instance.smash_jobs_map.removeFinishedJobs();
+    for (auto &j: jobs_map) {
+        if (j.second.stopped == true) {
             //[<job-id>] <command> : <process id> <seconds elapsed> (stopped)
-            cout << "[" << j.id << "] " << j.name << " : " << j.pid << " " <<
-                 difftime(time(nullptr), j.time) << "secs (stopped)" << endl;
+            cout << "[" << j.second.id << "] " << j.second.name << " : " << j.second.pid << " " <<
+                 difftime(time(nullptr), j.second.time) << "secs (stopped)" << endl;
         } else {
             //[<job-id>] <command> : <process id> <seconds elapsed>
-            cout << "[" << j.id << "] " << j.name << " : " << j.pid << " " <<
-                 difftime(time(nullptr), j.time) << "secs" << endl;
+            cout << "[" << j.second.id << "] " << j.second.name << " : " << j.second.pid << " " <<
+                 difftime(time(nullptr), j.second.time) << "secs" << endl;
         }
     }
 }
@@ -489,9 +488,9 @@ void JobsList::printJobsList() {
  */
 void JobsList::killAllJobs() { // remember to free entries
     SmallShell &instance = SmallShell::getInstance();
-    for (auto &j: jobs_list) {
-        cout << j.pid << ": " << j.name << endl;
-        kill(j.pid, SIGKILL);
+    for (auto &j: jobs_map) {
+        cout << j.second.pid << ": " << j.second.name << endl;
+        kill(j.second.pid, SIGKILL);
     }
 }
 
@@ -506,16 +505,16 @@ void JobsList::removeFinishedJobs() {
  * return job with job id
  */
 JobsList::JobEntry *JobsList::getJobById(int jobId) {
-    for (auto &j: jobs_list) {
-        if (j.id == jobId)
-            return &j;
+    for (auto &j: jobs_map) {
+        if (j.second.id == jobId)
+            return &j.second;
     }
 }
 
 void JobsList::removeJobById(int jobId) {
-    for (auto &j: jobs_list) {
-        if (j.id == jobId) {
-            jobs_list.erase(j);
+    for (auto &j: jobs_map) {
+        if (j.second.id == jobId) {
+            jobs_map.erase(j.second.id);
             break;
         }
     }
@@ -523,9 +522,9 @@ void JobsList::removeJobById(int jobId) {
 
 JobsList::JobEntry *JobsList::getLastJob(int *lastJobId) {
     int max = -1;
-    for (auto &j: jobs_list) {
-        if (j.id > max)
-            max = j.id;
+    for (auto &j: jobs_map) {
+        if (j.second.id > max)
+            max = j.second.id;
     }
     *lastJobId = max;
     return getJobById(max);
@@ -533,9 +532,9 @@ JobsList::JobEntry *JobsList::getLastJob(int *lastJobId) {
 
 JobsList::JobEntry *JobsList::getLastStoppedJob(int *jobId) {
     int max = -1;
-    for (auto &j: jobs_list) {
-        if (j.stopped == true)
-            max = j.id;
+    for (auto &j: jobs_map) {
+        if (j.second.stopped == true)
+            max = j.second.id;
     }
     *jobId = max;
     return getJobById(max);

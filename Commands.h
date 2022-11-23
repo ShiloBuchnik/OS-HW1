@@ -214,33 +214,35 @@ public:
     void execute() override;
 };
 
+
+
+class JobEntry {
+
+    /*
+     * job id is assigned by the shell once it's inserted to the jobs list
+     * time is seconds elapsed since job was inserted to the jobs list (?)
+     * name is the job's command
+     * pid is assigned to the process by the kernel
+     */
+
+    int id;
+    time_t time;
+    char *name;
+    pid_t pid;
+    bool stopped;
+
+    /*
+     * Constructor
+     */
+    JobEntry(int id, pid_t pid, time_t time, char &name, bool stopped);
+};
+
 class JobsList {
 public:
-    class JobEntry {
-
-        /*
-         * job id is assigned by the shell once it's inserted to the jobs list
-         * time is seconds elapsed since job was inserted to the jobs list (?)
-         * name is the job's command
-         * pid is assigned to the process by the kernel
-         */
-
-        int id;
-        time_t time;
-        char *name;
-        pid_t pid;
-        bool stopped;
-
-        /*
-         * Constructor
-         */
-        JobEntry(int id, pid_t pid, time_t time, char &name, bool stopped);
-    };
-
     /*
      * jobs list is a vector made of jobEntry elements
      */
-    std::vector <JobEntry> jobs_list;
+    std::map <int, JobEntry> jobs_map;
     int maxID; //for bg command
 
     // TODO: Add your data members
@@ -288,7 +290,7 @@ public:
     void executeCommand(const char *cmd_line);
     // TODO: add extra methods as needed
 
-    static JobsList list;
+    static JobsList smash_jobs_map;
 };
 
 #endif //SMASH_COMMAND_H_
