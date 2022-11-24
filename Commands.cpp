@@ -1,10 +1,11 @@
 #include <unistd.h>
 #include <string.h>
 #include <iostream>
-#include <vector>
+#include <map>
 #include <sstream>
 #include <sys/wait.h>
 #include <iomanip>
+#include <stdexcept>
 #include "Commands.h"
 
 using namespace std;
@@ -126,6 +127,8 @@ SmallShell::~SmallShell() {
 * Creates and returns a pointer to Command class which matches the given command line (cmd_line)
  *  This is the factory method
 */
+/* Things to do:
+1) set 'last_fg=false' before everything, and then if 'fg' is chosen, set 'last_fg=true' */
 Command *SmallShell::CreateCommand(const char *cmd_line) {
     // For example:
 /*
@@ -198,7 +201,9 @@ void ChangePromptCommand::execute() {
  *    params are ignored
  */
 
-ShowPidCommand::ShowPidCommand(const char *cmd_line) : BuiltIncommand(cmd_line) {}
+ShowPidCommand::ShowPidCommand(const char *cmd_line) : BuiltIncommand(cmd_line) {
+    _removeBackgroundSign(cmd_line);
+}
 
 void ShowPidCommand::execute() {
     pid_t pid = getpid();
@@ -218,7 +223,9 @@ void ShowPidCommand::execute() {
  *    params are ignored
  */
 
-GetCurrDirCommand::GetCurrDirCommand(const char *cmd_line) : BuiltInCommand(cmd_line) {}
+GetCurrDirCommand::GetCurrDirCommand(const char *cmd_line): BuiltInCommand(cmd_line) {
+    _removeBackgroundSign(cmd_line);
+}
 
 void GetCurrDirCommand::execute() {
     size_t size = pathconf(".", _PC_PATH_MAX);
@@ -258,7 +265,8 @@ void ChangeDirCommand::execute() {
 
     if (size == 1) { // No arguments
         cerr << "smash error:> " << cmd_line << endl;
-    } else if (size > 2) {
+    }
+    else if (size > 2) {
         cerr << "smash error: cd: too many arguments" << endl;
         return;
     }
@@ -271,7 +279,8 @@ void ChangeDirCommand::execute() {
 
         if (chdir(instance.prev_dir)
             perror("smash error: chdir failed"); // Previous directory is invalid - could it be?
-    } else { // User entered a path
+    }
+    else { // User entered a path
         char cur_path[MAX_LINE_LEN];
         getcwd(cur_path, MAX_LINE_LEN);
 
@@ -320,6 +329,82 @@ void ChangeDirCommand::execute() {
  *    invalid syntax - smash error: fg: invalid arguments
  */
 
+void ForegroundCommand::execute() {
+    SmallShell &instance = SmallShell::getInstance();
+
+    char **args = (char **) malloc(MAX_ARG_NUM * sizeof(char *));
+    size_t size = _parseCommandLine(this->cmd_line, args);
+
+    if (size > 2) {
+        cerr << "smash error: fg: invalid arguments" << endl;
+        freeArgs(args);
+        return;
+    }
+    if (args[1]) {
+        string id_str = args[1];
+        try {
+            int job_id = stoi(id_str);
+        } catch (invalid_argument &e) {
+            cerr << "smash error: fg: invalid arguments" << endl;
+            freeArgs(args);
+            return;
+        } catch (out_of_range &e) {
+            cerr << "smash error: fg: invalid arguments" << endl;
+            freeArgs(args);
+            return;
+        }
+    }
+    jobs->removeFinishedJobs();
+    int last_job_id = 0;
+    JobEntry *last_job = jobs->getLastJob(last_job_id);
+
+    //if no job id is specified, and last_job is null -> jobs list is empty
+    if (!last_job && size == 1) {
+        cerr << "smash error: fg: jobs list is empty" << endl;
+        freeArgs(args);
+        return;
+    }
+
+    //if job id is specified and jobs list is empty, different error (page 8)
+    if (!last_job && size == 2) {
+        cerr << "smash error: fg: job-id " << args[1] << " does not exist" << endl;
+        freeArgs(args);
+        return;
+    }
+
+    string id_str = args[1];
+    int job_id = stoi(id_str);
+
+    JobEntry *job = nullptr;
+    if (job_id != 0) {
+        job = jobs->getJobById(job_id);
+
+        if (!job) {
+            cerr << "smash error: fg: job-id " << job_id << " does not exist" << endl;
+            freeArgs(args);
+            return;
+        }
+    } else {
+        cerr << "smash error: fg: invalid arguments" << endl;
+        freeArgs(args);
+        return;
+    }
+
+    pid_t pid = job->pid;
+    cout << job->name << " : " << pid << endl;
+
+    if (job->stopped) {
+        job->stopped = false;
+        kill(pid, SIGCONT);
+    }
+
+    instance.updateCurrentJob(job);
+    waitpid(pid, WUNTRACED);
+    instance.updateCurrentJob(nullptr);
+
+    freeArgs(args);
+}
+
 /*
  * bg command
  * BackgroundCommand
@@ -339,6 +424,61 @@ void ChangeDirCommand::execute() {
  *    invalid syntax - smash error: bg: invalid arguments
  */
 
+void BackgroundCommand::execute() {
+    char **args = (char **) malloc(MAX_ARG_NUM * sizeof(char *));
+    size_t size = _parseCommandLine(this->cmd_line, args);
+
+    if (size > 2) {
+        cerr << "smash error: bg: invalid arguments" << endl;
+        freeArgs(args);
+        return;
+    }
+
+    int job_id = 0;
+    JobEntry *job = nullptr;
+    //if job id is specified
+    if (args[1]) {
+        string id_str = args[1];
+        try {
+            job_id = stoi(id_str);
+        } catch (invalid_argument &e) {
+            cerr << "smash error: bg: invalid arguments" << endl;
+            freeArgs(args);
+            return;
+        } catch (out_of_range &e) {
+            cerr << "smash error: bg: invalid arguments" << endl;
+            freeArgs(args);
+            return;
+        }
+        job = jobs->getJobById(job_id);
+        if (!job) {
+            cerr << "smash error: bg: job-id " << job_id << " does not exist" << endl;
+            freeArgs(args);
+            return;
+        }
+        if (!job->stopped) {
+            cerr << "smash error: bg: job-id " << job_id << " is already running in the background" << endl;
+            freeArgs(args);
+            return;
+        }
+    } else {
+        //no job id specified - last stopped job in jobs list is to continue running in bg
+        job = jobs->getLastStoppedJob(&job_id);
+        if (!job) {
+            cerr << "smash error: bg: there is no stopped jobs to resume" << endl;
+            freeArgs(args);
+            return;
+        }
+    }
+
+    pid_t pid = job->pid;
+    cout << job->name << " : " << pid << endl;
+    job->stopped = false;
+    kill(pid, SIGCONT);
+
+    freeArgs(args);
+}
+
 /*
  * quit command
  * QuitCommand
@@ -348,7 +488,7 @@ void ChangeDirCommand::execute() {
  * description:
  *    exists the smash
  *    if kill arg is specified:
- *        prit the num of processes/jobs that are to be killed , pids, command-lines
+ *        print the num of processes/jobs that are to be killed , pids, command-lines
  *        smash kills all unfinished and stopped jobs before exiting
  * error handling:
  *    params are ignored
@@ -363,8 +503,12 @@ void QuitCommand::execute() {
     size_t size = _parseCommandLine(this->cmd_line, args);
 
     if (size == 2 && strcmp(args[1], "kill")) {
-        // TBC
-    } else exit(0);
+        int num = this->jobs.size();
+        this->jobs->removeFinishedJobs();
+        cout << "smash: sending SIGKILL signal to " << num << " jobs:" << endl;
+        this->jobs->killAllJobs();
+    }
+    else exit(0);
 
     freeArgs(args);
 }
@@ -391,14 +535,14 @@ void ExternalCommand::execute() {
         if (isComplexCommand(args)) { // Complex command
             strcat(path, "bash"); // Setting the path to be "/bin/bash\0"
 
-            char *new_args[] = {"bash", "-c", args,
-                                nullptr}; // A quick hack to get '-c' as an argument, without copying everything
+            char *new_args[] = {"bash", "-c", args, nullptr}; // A quick hack to get '-c' as an argument, without copying everything
 
             if (execv(path, new_args)) {
                 perror("smash error: execv failed");
                 exit(-1);
             }
-        } else { // Simple command
+        }
+        else { // Simple command
             strcat(path, args[0]); // Setting the path to be "/bin/<command>\0"
 
             if (execv(path, args)) {
@@ -406,9 +550,9 @@ void ExternalCommand::execute() {
                 exit(-1);
             }
         }
-    } else { // Father, this is the smash shell
-        if (waitpid(pid, NULL, 0) ==
-            -1) { // In this case the process is in the foreground, so we wait for it. *Need to add background*
+    }
+    else { // Father, this is the smash shell
+        if (waitpid(pid, NULL, 0) == -1) { // In this case the process is in the foreground, so we wait for it. *Need to add background*
             perror("smash error: waitpid failed");
             return;
         }
@@ -434,33 +578,39 @@ void ExternalCommand::execute() {
  *    kill() syscall fails - perror used to print proper error message
  */
 
+
+
+
 /*
  *  JOBS LIST FUNCTIONS
  */
 
-/*
- * constructor job entries
- */
-JobEntry::JobEntry(int id, int pid, size_t time, char &name, bool stopped): id(id), pid(pid), time(time),
-                                                                                       name(name),
-                                                                                       stopped(stopped) {}
-/*
- * constructor jobs list
- */
-JobsList::JobsList(): jobs_map(), maxID(1) {}
+// JobEntry c'tor
+JobEntry::JobEntry(int pid, size_t time, string command, bool stopped): pid(pid), time(time), command(command), stopped(stopped) {}
+
+// JobsList c'tor
+JobsList::JobsList(): jobs_map() {}
 
 /*
  * add job to the jobs list; differentiate between jobs in background and jobs that have been stopped
- * //TODO
  */
-void JobsList::addJob(Command *cmd, bool last_fg, bool isStopped) {
+void JobsList::addJob(Command *cmd, pid_t pid, bool last_fg, bool isStopped) {
     //before adding new jobs to the list, finished jobs are deleted from list
     removeFinishedJobs();
-    char *name(cmd->get_cmd_line());
-
+    string command(cmd->get_cmd_line());
     SmallShell &instance = SmallShell::getInstance();
-    instance.smash_jobs_map.emplace()
 
+    if (last_fg) jobs_map.emplace <int, JobEntry> (instance.job_id_fg, {pid, time(nullptr), command, isStopped});
+    else{ // Note for self (shilo): no need to worry about cases such as running an fg proc and adding a different job, since it's not possible. Also, smile more
+        int job_id;
+        if (jobs_map.empty()) job_id = 1;
+        else{
+            auto it = jobs_map.end();
+            job_id = *(--it).first;
+        }
+
+        jobs_map.emplace <int, JobEntry> (job_id, {pid, time(nullptr), command, isStopped});
+    }
 }
 
 /*
@@ -474,11 +624,12 @@ void JobsList::printJobsList() {
     for (auto &j: jobs_map) {
         if (j.second.stopped) {
             //[<job-id>] <command> : <process id> <seconds elapsed> (stopped)
-            cout << "[" << j.second.id << "] " << j.second.name << " : " << j.second.pid << " " <<
+            cout << "[" << j.first << "] " << j.second.command << " : " << j.second.pid << " " <<
                  difftime(time(nullptr), j.second.time) << "secs (stopped)" << endl;
-        } else {
+        }
+        else{
             //[<job-id>] <command> : <process id> <seconds elapsed>
-            cout << "[" << j.second.id << "] " << j.second.name << " : " << j.second.pid << " " <<
+            cout << "[" << j.first << "] " << j.second.command << " : " << j.second.pid << " " <<
                  difftime(time(nullptr), j.second.time) << "secs" << endl;
         }
     }
@@ -490,7 +641,7 @@ void JobsList::printJobsList() {
 void JobsList::killAllJobs() { // remember to free entries
     SmallShell &instance = SmallShell::getInstance();
     for (auto &j: jobs_map) {
-        cout << j.second.pid << ": " << j.second.name << endl;
+        cout << j.second.pid << ": " << j.second.command << endl;
         kill(j.second.pid, SIGKILL);
     }
 }
@@ -499,33 +650,29 @@ void JobsList::killAllJobs() { // remember to free entries
  * removes finished jobs from list
  */
 void JobsList::removeFinishedJobs() { // Waiting for completion of pipe
-    //not sure
+ // TBC when done with pipes.
 }
 
 /*
  * return job with job id
  */
 JobEntry *JobsList::getJobById(int jobId) {
-    for (auto &j: jobs_map) {
-        if (j.second.id == jobId)
-            return j.second;
-    }
+    auto found = jobs_map.find(jobId);
 
-    return -1;
+    if (found == jobs_map.end()) return nullptr;
+    else return *found;
 }
 
+// Assert given key always exists in the map
 void JobsList::removeJobById(int jobId) {
-    for (auto &j: jobs_map) {
-        if (j.second.id == jobId) {
-            jobs_map.erase(j.second.id);
-            break;
-        }
-    }
+    jobs_map.erase(jobId);
 }
 
 JobEntry *JobsList::getLastJob(int *lastJobId) {
-    auto& end = jobs_map.end();
-    *lastJobId = end.second.id;
+    if (jobs_map.empty()) return nullptr;
+
+    auto end = jobs_map.end();
+    *lastJobId = *(--end).first;
 
     return getJobById(lastJobId);
 }
@@ -533,10 +680,15 @@ JobEntry *JobsList::getLastJob(int *lastJobId) {
 JobEntry *JobsList::getLastStoppedJob(int *jobId) {
     int max = -1;
     for (auto &j: jobs_map) {
-        if (j.second.stopped == true)
-            max = j.second.id;
+        if (j.second.stopped == true) max = j.first;
     }
-    *jobId = max;
-    return getJobById(max);
-}
 
+    if (max == -1){
+        *jobId = -1;
+        return nullptr;
+    }
+    else{
+        *jobId = max;
+        return getJobById(max);
+    }
+}
