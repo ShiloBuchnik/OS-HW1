@@ -113,9 +113,7 @@ bool isComplexCommand(char **args) {
 }
 
 
-// TODO: Add your implementation for classes in Commands.h 
-
-SmallShell::SmallShell() : prompt("smash"), prev_dir("") {
+SmallShell::SmallShell(): prompt("smash"), prev_dir(""), last_fg(false), fg_job_id(-1), current_job(nullptr), smash_jobs_list() {
 // TODO: add your implementation
 }
 
@@ -174,7 +172,7 @@ void SmallShell::executeCommand(const char *cmd_line) {
  *    more than one param - rest is ignored
  */
 
-ChangePromptCommand::ChangePromptCommand(const char *cmd_line) : BuiltIncommand(cmd_line) {
+ChangePromptCommand::ChangePromptCommand(const char *cmd_line): BuiltIncommand(cmd_line) {
     _removeBackgroundSign(cmd_line);
 }
 
@@ -201,7 +199,7 @@ void ChangePromptCommand::execute() {
  *    params are ignored
  */
 
-ShowPidCommand::ShowPidCommand(const char *cmd_line) : BuiltIncommand(cmd_line) {
+ShowPidCommand::ShowPidCommand(const char *cmd_line): BuiltIncommand(cmd_line) {
     _removeBackgroundSign(cmd_line);
 }
 
@@ -254,7 +252,7 @@ void GetCurrDirCommand::execute() {
  *    chdir() syscall fails - perror used to print proper error message
  */
 
-ChangeDirCommand::ChangeDirCommand(const char *cmd_line) : BuiltInCommand(cmd_line) {
+ChangeDirCommand::ChangeDirCommand(const char *cmd_line): BuiltInCommand(cmd_line) {
     _removeBackgroundSign(cmd_line);
 }
 
@@ -311,6 +309,13 @@ void ChangeDirCommand::execute() {
  *    params are ignored
  */
 
+JobsCommand::JobsCommand(const char* cmd_line, JobsList* jobs): BuiltInCommand(cmd_line), jobs(jobs) {}
+
+JobsCommand::execute(){
+    jobs->printJobsList();
+}
+
+
 /*
  * fg command
  * ForegroundCommand
@@ -328,6 +333,8 @@ void ChangeDirCommand::execute() {
  *    no args and jobs list is empty - smash error: fg: jobs list is empty
  *    invalid syntax - smash error: fg: invalid arguments
  */
+
+ForegroundCommand::ForegroundCommand(const char *cmd_line, JobsList *jobs): BuiltInCommand(cmd_line), jobs(jobs) {}
 
 void ForegroundCommand::execute() {
     SmallShell &instance = SmallShell::getInstance();
@@ -424,6 +431,8 @@ void ForegroundCommand::execute() {
  *    invalid syntax - smash error: bg: invalid arguments
  */
 
+BackgroundCommand::BackgroundCommand(const char *cmd_line, JobsList *jobs): BuiltInCommand(cmd_line), jobs(jobs) {}
+
 void BackgroundCommand::execute() {
     char **args = (char **) malloc(MAX_ARG_NUM * sizeof(char *));
     size_t size = _parseCommandLine(this->cmd_line, args);
@@ -494,7 +503,7 @@ void BackgroundCommand::execute() {
  *    params are ignored
  */
 
-QuitCommand::QuitCommand(const char *cmd_line, JobsList *jobs) : BuiltInCommand(cmd_line), jobs(jobs) {
+QuitCommand::QuitCommand(const char *cmd_line, JobsList *jobs): BuiltInCommand(cmd_line), jobs(jobs) {
     _removeBackgroundSign(cmd_line);
 }
 
@@ -502,11 +511,13 @@ void QuitCommand::execute() {
     char **args = (char **) malloc(MAX_ARG_NUM * sizeof(char *));
     size_t size = _parseCommandLine(this->cmd_line, args);
 
-    if (size == 2 && strcmp(args[1], "kill")) {
+    if (size == 2 && !strcmp(args[1], "kill")) {
         int num = this->jobs.size();
         this->jobs->removeFinishedJobs();
         cout << "smash: sending SIGKILL signal to " << num << " jobs:" << endl;
         this->jobs->killAllJobs();
+
+        exit(0);
     }
     else exit(0);
 
@@ -621,6 +632,7 @@ void JobsList::printJobsList() {
     SmallShell &instance = SmallShell::getInstance();
     //before printing jobs list, finished jobs are deleted from list
     instance.smash_jobs_map.removeFinishedJobs();
+
     for (auto &j: jobs_map) {
         if (j.second.stopped) {
             //[<job-id>] <command> : <process id> <seconds elapsed> (stopped)

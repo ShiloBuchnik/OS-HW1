@@ -11,7 +11,7 @@
 class Command {
     char* cmd_line;
 public:
-    Command(const char* cmd_line) : cmd_line(cmd_line) {}
+    Command(const char* cmd_line): cmd_line(cmd_line) {}
 
     virtual ~Command();
 
@@ -27,7 +27,7 @@ public:
 
 class BuiltInCommand : public Command {
 public:
-    BuiltInCommand(const char *cmd_line) : Command(cmd_line) {}
+    BuiltInCommand(const char *cmd_line): Command(cmd_line) {}
 
     virtual ~BuiltInCommand() {}
 };
@@ -119,6 +119,8 @@ public:
 class JobsCommand : public BuiltInCommand {
     // TODO: Add your data members
 public:
+    JobsList* jobs;
+
     JobsCommand(const char *cmd_line, JobsList *jobs);
 
     virtual ~JobsCommand() {}
@@ -274,6 +276,7 @@ public:
     bool last_fg; // True if last command was 'fg'
     int fg_job_id; // Stores the job id of the job we removed out of jobList using 'fg'
     JobEntry *current_job;
+    JobsList smash_jobs_list;
 
     Command *CreateCommand(const char *cmd_line);
 
@@ -290,8 +293,6 @@ public:
 
     void executeCommand(const char *cmd_line);
     // TODO: add extra methods as needed
-
-    static JobsList smash_jobs_list;
 
     void updateCurrentJob(JobEntry* j) {
         current_job = j;
