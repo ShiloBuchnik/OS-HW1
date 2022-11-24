@@ -137,6 +137,8 @@ public:
     virtual ~ForegroundCommand() {}
 
     void execute() override;
+
+    JobsList *jobs;
 };
 
 /*
@@ -215,7 +217,6 @@ public:
 };
 
 
-
 class JobEntry {
 
     /*
@@ -242,7 +243,7 @@ public:
     /*
      * jobs list is a vector made of jobEntry elements
      */
-    std::map <int, JobEntry> jobs_map;
+    std::map<int, JobEntry> jobs_map;
     int maxID; //for bg command
 
     // TODO: Add your data members
@@ -252,11 +253,13 @@ public:
     ~JobsList() = default;
 
     void addJob(Command *cmd, bool last_fg = false, bool isStopped = false);
+
     void printJobsList();
 
     void killAllJobs();
 
     void removeFinishedJobs();
+
     JobEntry *getJobById(int jobId);
 
     void removeJobById(int jobId);
@@ -275,7 +278,10 @@ public:
     string prompt; // For chprompt
     string prev_dir; // For cd
     Command *CreateCommand(const char *cmd_line);
+
     bool last_fg;
+
+    JobEntry *current_job = nullptr;
 
     SmallShell(SmallShell const &) = delete; // disable copy ctor
     void operator=(SmallShell const &) = delete; // disable = operator
@@ -292,6 +298,10 @@ public:
     // TODO: add extra methods as needed
 
     static JobsList smash_jobs_map;
+
+    void updateCurrentJob(JobEntry *j) {
+        current_job = j;
+    }
 };
 
 #endif //SMASH_COMMAND_H_

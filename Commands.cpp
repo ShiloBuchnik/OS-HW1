@@ -6,6 +6,7 @@
 #include <sys/wait.h>
 #include <iomanip>
 #include "Commands.h"
+#include <stdexcept>
 
 using namespace std;
 
@@ -320,6 +321,78 @@ void ChangeDirCommand::execute() {
  *    invalid syntax - smash error: fg: invalid arguments
  */
 
+void ForegroundCommand::execute() {
+    SmallShell &instance = SmallShell::getInstance();
+
+    char **args = (char **) malloc(MAX_ARG_NUM * sizeof(char *));
+    size_t size = _parseCommandLine(this->cmd_line, args);
+
+    if (size > 2) {
+        cerr << "smash error: fg: invalid arguments" << endl;
+        freeArgs(args);
+        return;
+    }
+    if (args[1]) {
+        string id_str = args[1];
+        try {
+            int job_id = stoi(id_str);
+        } catch (invalid_argument &e) {
+            cerr << "smash error: fg: invalid arguments" << endl;
+            freeArgs(args);
+            return;
+        } catch (out_of_range &e) {
+            cerr << "smash error: fg: invalid arguments" << endl;
+            freeArgs(args);
+            return;
+        }
+    }
+    jobs->removeFinishedJobs();
+    int last_job_id = 0;
+    JobEntry *last_job = jobs->getLastJob(last_job_id);
+
+    //if no job id is specified, and last_job is null -> jobs list is empty
+    if (!last_job && size == 1) {
+        cerr << "smash error: fg: jobs list is empty" << endl;
+        freeArgs(args);
+        return;
+    }
+
+    //if job id is specified and jobs list is empty, different error (page 8)
+    if (!last_job && size == 2) {
+        cerr << "smash error: fg: job-id " << args[1] << " does not exist" << endl;
+        freeArgs(args);
+        return;
+    }
+
+    string id_str = args[1];
+    int job_id = stoi(id_str);
+
+    JobEntry *job;
+    if (job_id != 0) {
+        job = jobs->getJobById(job_id);
+
+        if (!job) {
+            cerr << "smash error: fg: job-id " << job_id << " does not exist" << endl;
+            freeArgs(args);
+            return;
+        }
+    }
+
+    pid_t pid = job->pid;
+    cout << job->name << " : "
+    pid << endl;
+
+    if (job->stopped) {
+        job->stopped = false;
+        kill(pid, SIGCONT);
+    }
+
+    instance.updateCurrentJob(job);
+    waitpid(pid, WUNTRACED);
+    instance.updateCurrentJob(nullptr);
+
+}
+
 /*
  * bg command
  * BackgroundCommand
@@ -444,13 +517,14 @@ void ExternalCommand::execute() {
 /*
  * constructor job entries
  */
-JobEntry::JobEntry(int id, int pid, size_t time, char &name, bool stopped): id(id), pid(pid), time(time),
-                                                                                       name(name),
-                                                                                       stopped(stopped) {}
+JobEntry::JobEntry(int id, int pid, size_t time, char &name, bool stopped) : id(id), pid(pid), time(time),
+                                                                             name(name),
+                                                                             stopped(stopped) {}
+
 /*
  * constructor jobs list
  */
-JobsList::JobsList(): jobs_map(), maxID(1) {}
+JobsList::JobsList() : jobs_map(), maxID(1) {}
 
 /*
  * add job to the jobs list; differentiate between jobs in background and jobs that have been stopped
@@ -527,7 +601,7 @@ void JobsList::removeJobById(int jobId) {
 }
 
 JobEntry *JobsList::getLastJob(int *lastJobId) {
-    auto& end = jobs_map.end();
+    auto &end = jobs_map.end();
     *lastJobId = end.second.id;
 
     return getJobById(lastJobId);
