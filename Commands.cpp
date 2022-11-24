@@ -367,7 +367,7 @@ void ForegroundCommand::execute() {
     string id_str = args[1];
     int job_id = stoi(id_str);
 
-    JobEntry *job;
+    JobEntry *job = nullptr;
     if (job_id != 0) {
         job = jobs->getJobById(job_id);
 
@@ -376,11 +376,14 @@ void ForegroundCommand::execute() {
             freeArgs(args);
             return;
         }
+    } else {
+        cerr << "smash error: fg: invalid arguments" << endl;
+        freeArgs(args);
+        return;
     }
 
     pid_t pid = job->pid;
-    cout << job->name << " : "
-    pid << endl;
+    cout << job->name << " : " << pid << endl;
 
     if (job->stopped) {
         job->stopped = false;
@@ -391,6 +394,7 @@ void ForegroundCommand::execute() {
     waitpid(pid, WUNTRACED);
     instance.updateCurrentJob(nullptr);
 
+    freeArgs(args);
 }
 
 /*
@@ -411,6 +415,61 @@ void ForegroundCommand::execute() {
  *    no args and no stopped jobs - smash error: bg: there is no stopped jobs to resume
  *    invalid syntax - smash error: bg: invalid arguments
  */
+
+void BackgroundCommand::execute() {
+    char **args = (char **) malloc(MAX_ARG_NUM * sizeof(char *));
+    size_t size = _parseCommandLine(this->cmd_line, args);
+
+    if (size > 2) {
+        cerr << "smash error: bg: invalid arguments" << endl;
+        freeArgs(args);
+        return;
+    }
+
+    int job_id = 0;
+    JobEntry *job = nullptr;
+    //if job id is specified
+    if (args[1]) {
+        string id_str = args[1];
+        try {
+            job_id = stoi(id_str);
+        } catch (invalid_argument &e) {
+            cerr << "smash error: bg: invalid arguments" << endl;
+            freeArgs(args);
+            return;
+        } catch (out_of_range &e) {
+            cerr << "smash error: bg: invalid arguments" << endl;
+            freeArgs(args);
+            return;
+        }
+        job = jobs->getJobById(job_id);
+        if (!job) {
+            cerr << "smash error: bg: job-id " << job_id << " does not exist" << endl;
+            freeArgs(args);
+            return;
+        }
+        if (!job->stopped) {
+            cerr << "smash error: bg: job-id " << job_id << " is already running in the background" << endl;
+            freeArgs(args);
+            return;
+        }
+    } else {
+        //no job id specified - last stopped job in jobs list is to continue running in bg
+        job = jobs->getLastStoppedJob(&job_id);
+        if (!job) {
+            cerr << "smash error: bg: there is no stopped jobs to resume" << endl;
+            freeArgs(args);
+            return;
+        }
+    }
+
+    pid_t pid = job->pid;
+    cout << job->name << " : " << pid << endl;
+    job->stopped = false;
+    kill(pid, SIGCONT);
+
+    freeArgs(args);
+}
 
 /*
  * quit command

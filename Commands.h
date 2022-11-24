@@ -152,6 +152,8 @@ public:
     virtual ~BackgroundCommand() {}
 
     void execute() override;
+
+    JobsList *jobs;
 };
 
 /*
