@@ -348,7 +348,7 @@ void ChangeDirCommand::execute() {
  * description:
  *    exists the smash
  *    if kill arg is specified:
- *        prit the num of processes/jobs that are to be killed , pids, command-lines
+ *        print the num of processes/jobs that are to be killed , pids, command-lines
  *        smash kills all unfinished and stopped jobs before exiting
  * error handling:
  *    params are ignored
@@ -363,7 +363,10 @@ void QuitCommand::execute() {
     size_t size = _parseCommandLine(this->cmd_line, args);
 
     if (size == 2 && strcmp(args[1], "kill")) {
-        // TBC
+        int num = this->jobs.size();
+        this->jobs->removeFinishedJobs();
+        cout << "smash: sending SIGKILL signal to " << num << " jobs:" << endl;
+        this->jobs->killAllJobs();
     } else exit(0);
 
     freeArgs(args);
