@@ -64,8 +64,8 @@ public:
     virtual ~RedirectionCommand() {}
 
     void execute() override;
-    void prepare() override;
-    void cleanup() override;
+    void prepare();
+    void cleanup();
 };
 
 class JobsList;

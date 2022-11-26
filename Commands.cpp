@@ -13,7 +13,7 @@ using namespace std;
 #define MAX_LINE_LEN 80
 #define MAX_ARG_NUM 21
 
-#define SYSCALL_FAILED
+#define SYSCALL_FAILED -1
 
 const std::string WHITESPACE = " \n\r\t\f\v";
 
@@ -407,7 +407,7 @@ void ForegroundCommand::execute() {
     instance.current_command = job->command;
     jobs.removeJobById(job_id);
     instance.updateCurrentJob(job);
-    if (waitpid(pid, NULL, WUNTRACED) == SYSCALL_FAILED){
+    if (waitpid(pid, NULL, WUNTRACED) == -1){
         perror("smash error: waitpid failed");
         freeArgs(args);
         return;
@@ -542,7 +542,7 @@ void ExternalCommand::execute(){ // Remember to update current_pid and current_c
     char cmd_line_copy[MAX_LINE_LEN];
     strcpy(cmd_line_copy, _trim(string(cmd_line)).c_str());
 
-    bool background = _isBackgroundCommand(cmd_line_copy);
+    bool background = _isBackgroundComamnd(cmd_line_copy);
     if (background) _removeBackgroundSign(cmd_line_copy);
 
     pid_t pid = fork();
@@ -578,6 +578,8 @@ void ExternalCommand::execute(){ // Remember to update current_pid and current_c
         }
     }
     else { // Father, this is the smash shell
+        SmallShell& instance = SmallShell::getInstance();
+
         if (background){ // If background
             instance.smash_jobs_list.addJob(this, pid);
         }
@@ -742,9 +744,9 @@ PipeCommand::PipeCommand(char *cmd_line) : Command(cmd_line){
 
     //cmd2 is from after | or |& to end of string
     if (bar == "|")
-        com2 = cmd.substr(s.find(bar) + 1, cmd.length());
+        com2 = cmd.substr(cmd.find(bar) + 1, cmd.length());
     else
-        com2 = cmd.substr(s.find(bar) + 2, cmd.length());
+        com2 = cmd.substr(cmd.find(bar) + 2, cmd.length());
 }
 
 void PipeCommand::execute() {
@@ -829,7 +831,7 @@ void PipeCommand::execute() {
                 perror("smash error: close failed");
             }
             instance.is_pipe = true;
-            instance.executeCommand(com1);
+            instance.executeCommand(com1.c_str());
             exit(0);
         }
     }
@@ -878,7 +880,7 @@ void PipeCommand::execute() {
             perror("smash error: close failed");
         }
         instance.is_pipe = true;
-        instance.executeCommand(com2);
+        instance.executeCommand(com2.c_str());
         exit(0);
     }
     if (close(pipefd[0]) == SYSCALL_FAILED) {
@@ -897,5 +899,4 @@ void PipeCommand::execute() {
         perror("smash error: waitpid failed");
         return;
     }
-
 }
