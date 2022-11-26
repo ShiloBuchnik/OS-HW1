@@ -295,6 +295,10 @@ public:
     void updateCurrentJob(JobEntry* j) {
         current_job = j;
     }
+
+    JobEntry* getCurrentJob() {
+        return current_job;
+    }
 };
 
 #endif //SMASH_COMMAND_H_
