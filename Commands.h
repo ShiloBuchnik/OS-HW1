@@ -43,6 +43,11 @@ public:
 
 class PipeCommand: public Command {
     // TODO: Add your data members
+
+    std::string com1;
+    std::string com2;
+    std::string bar;
+
 public:
     PipeCommand(char *cmd_line);
 
@@ -278,6 +283,8 @@ public:
     pid_t current_pid;
     std::string current_command;
     Command *CreateCommand(char *cmd_line);
+
+    bool is_pipe;
 
     SmallShell(SmallShell const &) = delete; // disable copy c'tor
     void operator=(SmallShell const &) = delete; // disable '=' operator

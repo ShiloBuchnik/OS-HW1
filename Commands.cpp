@@ -13,6 +13,8 @@ using namespace std;
 #define MAX_LINE_LEN 80
 #define MAX_ARG_NUM 21
 
+#define SYSCALL_FAILED
+
 const std::string WHITESPACE = " \n\r\t\f\v";
 
 #if 0
@@ -114,7 +116,7 @@ bool isComplexCommand(char **args) {
 
 
 SmallShell::SmallShell(): prompt("smash"), prev_dir(""), last_fg(false), fg_job_id(-1), current_job(nullptr), smash_jobs_list(),
-                          current_pid(-1), current_command() {
+                          current_pid(-1), current_command(), is_pipe(false) {
 // TODO: add your implementation
 }
 
@@ -405,7 +407,7 @@ void ForegroundCommand::execute() {
     instance.current_command = job->command;
     jobs.removeJobById(job_id);
     instance.updateCurrentJob(job);
-    if (waitpid( pid, NULL, WUNTRACED){
+    if (waitpid(pid, NULL, WUNTRACED) == SYSCALL_FAILED){
         perror("smash error: waitpid failed");
         freeArgs(args);
         return;
@@ -720,4 +722,180 @@ JobEntry *JobsList::getLastStoppedJob(int *jobId) {
         *jobId = max;
         return getJobById(max);
     }
+}
+
+/*
+ * PIPE COMMANDS
+ */
+
+PipeCommand::PipeCommand(char *cmd_line) : Command(cmd_line){
+    string cmd = string(cmd_line);
+
+    //determine if the pipe is | or |&
+    if (cmd.find("|&") == string::npos)
+        bar = "|";
+    else
+        bar = "|&";
+
+    //cmd1 is from the beg of the string to the position of | or |&
+    com1 = cmd.substr(0, cmd.find(bar));
+
+    //cmd2 is from after | or |& to end of string
+    if (bar == "|")
+        com2 = cmd.substr(s.find(bar) + 1, cmd.length());
+    else
+        com2 = cmd.substr(s.find(bar) + 2, cmd.length());
+}
+
+void PipeCommand::execute() {
+    //pipefd array is used to return two file descriptors referring to the ends of the pipe
+    //pipefd[0] is read end
+    //pipefd[1] is write end
+    int pipefd[2];
+    pipe(pipefd);
+
+    SmallShell &instance = SmallShell::getInstance();
+
+    pid_t pid1 = fork();
+    pid_t pid2;
+
+    //if fork is successful, the pid of the child is returned in the parent and 0 in the child; on failure -1 is returned
+    if (pid1 == SYSCALL_FAILED) {
+        perror("smash error: fork failed");
+        if (close(pipefd[0]) == SYSCALL_FAILED) {
+            perror("smash error: close failed");
+        }
+        if (close(pipefd[1]) == SYSCALL_FAILED) {
+            perror("smash error: close failed");
+        }
+        return;
+    }
+    if (pid1 == 0) { //son no.1
+        //not sure if needed - in the man there is no return value for setpgrp
+        if (setpgrp() == SYSCALL_FAILED) {
+            perror("smash error: setpgrp failed");
+            if (close(pipefd[0]) == SYSCALL_FAILED) {
+                perror("smash error: close failed");
+            }
+            if (close(pipefd[1]) == SYSCALL_FAILED) {
+                perror("smash error: close failed");
+            }
+            return;
+        }
+        if (bar == "|") {
+            /*
+             * using the pipe character “|” will produce a pipe which
+             * redirects command1 stdout to its write channel and command2 stdin to its read channel.
+             *
+             * int dup2(int oldfd, int newfd);
+             * the file descriptor newfd is adjusted so that it now
+             * refers to the same open file description as oldfd.
+             *
+             * 1 is fd for stdout
+             */
+            if (dup2(pipefd[1], 1) == SYSCALL_FAILED) {
+                perror("smash error: dup2 failed");
+                if (close(pipefd[0]) == SYSCALL_FAILED) {
+                    perror("smash error: close failed");
+                }
+                if (close(pipefd[1]) == SYSCALL_FAILED) {
+                    perror("smash error: close failed");
+                }
+                return;
+            } else { //bar == "|&"
+                /*
+                 * using the pipe character “|&” will produce a pipe
+                 * which redirects command1 stderr to the pipe’s write channel and command2 stdin
+                 * to the pipe’s read channel.
+                 *
+                 * 2 is fd for stderr
+                 */
+
+                if (dup2(pipefd[1], 2) == SYSCALL_FAILED) {
+                    perror("smash error: dup2 failed");
+                    if (close(pipefd[0]) == SYSCALL_FAILED) {
+                        perror("smash error: close failed");
+                    }
+                    if (close(pipefd[1]) == SYSCALL_FAILED) {
+                        perror("smash error: close failed");
+                    }
+                    return;
+                }
+            }
+            if (close(pipefd[0]) == SYSCALL_FAILED) {
+                perror("smash error: close failed");
+            }
+            if (close(pipefd[1]) == SYSCALL_FAILED) {
+                perror("smash error: close failed");
+            }
+            instance.is_pipe = true;
+            instance.executeCommand(com1);
+            exit(0);
+        }
+    }
+
+    pid2 = fork();
+    if (pid1 == SYSCALL_FAILED) {
+        perror("smash error: fork failed");
+        if (close(pipefd[0]) == SYSCALL_FAILED) {
+            perror("smash error: close failed");
+        }
+        if (close(pipefd[1]) == SYSCALL_FAILED) {
+            perror("smash error: close failed");
+        }
+        return;
+    }
+    if (pid2 == 0) { //son no.2
+        if (setpgrp() == SYSCALL_FAILED) {
+            perror("smash error: setpgrp failed");
+            if (close(pipefd[0]) == SYSCALL_FAILED) {
+                perror("smash error: close failed");
+            }
+            if (close(pipefd[1]) == SYSCALL_FAILED) {
+                perror("smash error: close failed");
+            }
+            return;
+        }
+        /*
+         * both | and |& redirect command2 stdin to the pipe's read channel
+         *
+         * 0 ifs fd for stdin
+         */
+        if (dup2(pipefd[0], 0) == SYSCALL_FAILED) {
+            perror("smash error: dup2 failed");
+            if (close(pipefd[0]) == SYSCALL_FAILED) {
+                perror("smash error: close failed");
+            }
+            if (close(pipefd[1]) == SYSCALL_FAILED) {
+                perror("smash error: close failed");
+            }
+            return;
+        }
+        if (close(pipefd[0]) == SYSCALL_FAILED) {
+            perror("smash error: close failed");
+        }
+        if (close(pipefd[1]) == SYSCALL_FAILED) {
+            perror("smash error: close failed");
+        }
+        instance.is_pipe = true;
+        instance.executeCommand(com2);
+        exit(0);
+    }
+    if (close(pipefd[0]) == SYSCALL_FAILED) {
+        perror("smash error: close failed");
+    }
+    if (close(pipefd[1]) == SYSCALL_FAILED) {
+        perror("smash error: close failed");
+    }
+    //papa no.1
+    if (waitpid(pid1, nullptr, WUNTRACED) == SYSCALL_FAILED) {
+        perror("smash error: waitpid failed");
+        return;
+    }
+    //abba no.2
+    if (waitpid(pid2, nullptr, WUNTRACED) == SYSCALL_FAILED) {
+        perror("smash error: waitpid failed");
+        return;
+    }
+
 }
