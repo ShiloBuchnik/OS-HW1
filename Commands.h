@@ -57,8 +57,14 @@ public:
 };
 
 class RedirectionCommand: public Command {
-    // TODO: Add your data members
 public:
+    char* cmd;
+    char* filename;
+    bool is_append;
+    bool is_success; // redirect_success, delete this comment later
+    int stdout_copy;
+    int fd;
+
     explicit RedirectionCommand(char *cmd_line);
 
     virtual ~RedirectionCommand() {}

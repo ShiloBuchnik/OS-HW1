@@ -38,6 +38,7 @@ string _rtrim(const std::string &s) {
     return (end == std::string::npos) ? "" : s.substr(0, end + 1);
 }
 
+// trims whitespace from left and right of command
 string _trim(const std::string &s){
     return _rtrim(_ltrim(s));
 }
@@ -711,20 +712,59 @@ JobEntry* JobsList::getLastJob(int *lastJobId) {
 }
 
 JobEntry *JobsList::getLastStoppedJob(int *jobId) {
-    int max = -1;
+    int last = -1;
     for (auto &j: jobs_map) {
-        if (j.second.stopped == true) max = j.first;
+        if (j.second.stopped) last = j.first;
     }
 
-    if (max == -1){
+    if (last == -1){
         *jobId = -1;
         return nullptr;
     }
     else{
-        *jobId = max;
-        return getJobById(max);
+        *jobId = last;
+        return getJobById(last);
     }
 }
+
+
+/*
+ * REDIRECTION COMMANDS
+ */
+
+RedirectionCommand::RedirectionCommand(char *cmd_line): Command(cmd_line) {
+    char** args = (char**) malloc(MAX_ARG_NUM * sizeof(char*));
+    _parseCommandLine(this->cmd_line, args);
+    string str = string(cmd_line);
+    string delim = str.find(">") != string::npos ? ">" : ">>";
+
+    string trim_cmd = _trim(str.substr(0, str.find(delim))); // command to the left
+    this->cmd = (char*) malloc((strlen(trim_cmd.c_str()) + 1) * sizeof(char));
+    strcpy(cmd, trim_cmd.c_str()); // // command to the left
+    string trim_filename = _trim(str.substr(str.find(delim) + delim.length(), str.length())); // filename to the right
+
+    if (_isBackgroundComamnd((char*)trim_filename.c_str())) { // Background commands ('&') are not allowed with redirection, so we remove and trim
+        char temp[MAX_LINE_LEN]; // Temporary trimmed copy of filename. We remove '&' from it, and reassign
+        strcpy(temp, trim_filename.c_str());
+        _removeBackgroundSign(temp);
+        trim_filename = _trim(string(temp));
+    }
+
+    filename = (char*) malloc((strlen(trim_filename.c_str()) + 1) * sizeof(char));
+    strcpy(filename, trim_filename.c_str()); // filename to the right
+
+    this->is_append = (strcmp(delim.c_str(), ">>") == 0) ? true : false;
+    this->is_success = false;
+    this->stdout_copy = 0;
+    this->fd = 0;
+
+    //prepare();
+    freeArgs(args);
+}
+
+
+
+
 
 /*
  * PIPE COMMANDS
