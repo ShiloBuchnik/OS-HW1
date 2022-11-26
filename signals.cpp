@@ -38,7 +38,7 @@ void ctrlCHandler(int sig_num) {
   if (instance.current_pid != -1){
       int pid = instance.current_pid;
       instance.current_pid = -1;
-
+      instance.current_cmd = "";
       kill (pid, SIGINT);
       cout << "smash: process " << pid << " was killed"
   }
