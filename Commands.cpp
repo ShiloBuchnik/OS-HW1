@@ -346,6 +346,7 @@ void ForegroundCommand::execute() {
         freeArgs(args);
         return;
     }
+    //job_id is specified
     else if (size == 2) {
         try {
             job_id = atoi(args[1]);
@@ -361,6 +362,37 @@ void ForegroundCommand::execute() {
     }
     jobs.removeFinishedJobs();
     int last_job_id = 0;
+
+    JobEntry *job = jobs.getLastJob(&last_job_id);
+    //if no job_id specified, the job to be moved to the fg is the last job
+    //if job_id is specified, we will change job to the job by id
+
+    //no job_id && jobs list is empty
+    if (!job && size == 1){
+        cerr << "smash error: fg: jobs list is empty" << endl;
+        freeArgs(args);
+        return;
+    }
+
+    //job_id && jobs list is empty
+    if (!job && size == 2){
+        cerr << "smash error: fg: job-id " << args[1] << " does not exist" << endl;
+        freeArgs(args);
+        return;
+    }
+
+    if (job_id > 0){
+        job = jobs.getJobById(job_id);
+
+        //job_id && the job with that id doesn't  exist
+        if (!job){
+            cerr << "smash error: fg: job-id " << job_id << " does not exist" << endl;
+            freeArgs(args);
+            return;
+        }
+    }
+
+    /*
     JobEntry *last_job = jobs.getLastJob(&last_job_id);
 
     //if no job id is specified, and last_job is null -> jobs list is empty
@@ -379,6 +411,7 @@ void ForegroundCommand::execute() {
 
     JobEntry *job = nullptr;
     if (0 < job_id) {
+        //job_id>0 if job_id is specified
         job = jobs.getJobById(job_id);
 
         if (!job) {
@@ -392,6 +425,7 @@ void ForegroundCommand::execute() {
         freeArgs(args);
         return;
     }
+     */
 
     pid_t pid = job->pid;
     cout << job->command << " : " << pid << endl;
