@@ -113,7 +113,8 @@ bool isComplexCommand(char **args) {
 }
 
 
-SmallShell::SmallShell(): prompt("smash"), prev_dir(""), last_fg(false), fg_job_id(-1), current_job(nullptr), smash_jobs_list() {
+SmallShell::SmallShell(): prompt("smash"), prev_dir(""), last_fg(false), fg_job_id(-1), current_job(nullptr), smash_jobs_list(),
+                          current_pid(-1), current_command() {
 // TODO: add your implementation
 }
 
@@ -337,7 +338,7 @@ void ForegroundCommand::execute() {
     SmallShell &instance = SmallShell::getInstance();
     JobsList jobs = instance.smash_jobs_list;
 
-    char **args = (char **) malloc(MAX_ARG_NUM * sizeof(char *));
+    char** args = (char **) malloc(MAX_ARG_NUM * sizeof(char *));
     size_t size = _parseCommandLine(this->cmd_line, args);
 
     int job_id = 0;
@@ -381,7 +382,7 @@ void ForegroundCommand::execute() {
         return;
     }
 
-    if (job_id > 0){
+    if (job_id > 0){ // Assert size == 2
         job = jobs.getJobById(job_id);
 
         //job_id && the job with that id doesn't  exist
@@ -392,41 +393,6 @@ void ForegroundCommand::execute() {
         }
     }
 
-    /*
-    JobEntry *last_job = jobs.getLastJob(&last_job_id);
-
-    //if no job id is specified, and last_job is null -> jobs list is empty
-    if (!last_job && size == 1) {
-        cerr << "smash error: fg: jobs list is empty" << endl;
-        freeArgs(args);
-        return;
-    }
-
-    //if job id is specified and jobs list is empty, different error (page 8)
-    if (!last_job && size == 2) {
-        cerr << "smash error: fg: job-id " << args[1] << " does not exist" << endl;
-        freeArgs(args);
-        return;
-    }
-
-    JobEntry *job = nullptr;
-    if (0 < job_id) {
-        //job_id>0 if job_id is specified
-        job = jobs.getJobById(job_id);
-
-        if (!job) {
-            cerr << "smash error: fg: job-id " << job_id << " does not exist" << endl;
-            freeArgs(args);
-            return;
-        }
-    }
-    else {
-        cerr << "smash error: fg: invalid arguments" << endl;
-        freeArgs(args);
-        return;
-    }
-     */
-
     pid_t pid = job->pid;
     cout << job->command << " : " << pid << endl;
 
@@ -435,9 +401,15 @@ void ForegroundCommand::execute() {
         kill(pid, SIGCONT);
     }
 
+    instance.current_pid = pid;
+    instance.current_command = job->command;
     jobs.removeJobById(job_id);
     instance.updateCurrentJob(job);
-    waitpid( pid, nullptr, WUNTRACED);
+    if (waitpid( pid, NULL, WUNTRACED){
+        perror("smash error: waitpid failed");
+        freeArgs(args);
+        return;
+    }
     instance.updateCurrentJob(nullptr);
 
     freeArgs(args);
@@ -563,12 +535,10 @@ void QuitCommand::execute() {
 
 ExternalCommand::ExternalCommand(char *cmd_line) : Command(cmd_line) {}
 
-void ExternalCommand::execute(){
+void ExternalCommand::execute(){ // Remember to update current_pid and current_cmd somewhere idgaf
     _removeBackgroundSign(this->cmd_line);
     char* args[MAX_ARG_NUM];
     size_t size = _parseCommandLine(this->cmd_line, args);
-    char* path = (char*) malloc(MAX_LINE_LEN * sizeof(char));
-    strcpy(path, "/bin/\0");
 
     pid_t pid = fork();
     if (pid == 0) { // Son, this is the actual external command
@@ -578,7 +548,8 @@ void ExternalCommand::execute(){
         }
 
         if (isComplexCommand(args)) { // Complex command
-            strcat(path, "bash"); // Setting the path to be "/bin/bash\0"
+            char* path = (char*) malloc(MAX_LINE_LEN * sizeof(char));
+            strcpy(path, "/bin/bash\0");
 
             char* new_args[MAX_ARG_NUM + 3];
             new_args[0] = (char*)"bash\0";
@@ -589,13 +560,13 @@ void ExternalCommand::execute(){
 
             if (execv(path, new_args)) { // Passing non-const to a const argument is an implicit conversion, all good
                 perror("smash error: execv failed");
+                free(path);
                 exit(-1);
             }
+            free(path);
         }
         else { // Simple command
-            strcat(path, args[0]); // Setting the path to be "/bin/<command>\0"
-
-            if (execv(path, args)) {
+            if (execvp(args[0], args)) {
                 perror("smash error: execv failed");
                 exit(-1);
             }
@@ -609,7 +580,6 @@ void ExternalCommand::execute(){
     }
 
     freeArgs(args);
-    free(path);
 }
 
 
