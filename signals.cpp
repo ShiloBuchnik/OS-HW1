@@ -32,6 +32,16 @@ void ctrlZHandler(int sig_num) {
 
 void ctrlCHandler(int sig_num) {
   // TODO: Add your implementation
+
+  cout << ": smash: got ctrl-C" << endl;
+  SmallShell &instance = SmallShell::getInstance();
+  if (instance.current_pid != -1){
+      int pid = instance.current_pid;
+      instance.current_pid = -1;
+
+      kill (pid, SIGINT);
+      cout << "smash: process " << pid << " was killed"
+  }
 }
 
 void alarmHandler(int sig_num) {
