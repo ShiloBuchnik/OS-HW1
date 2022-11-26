@@ -1,7 +1,7 @@
 #ifndef SMASH_COMMAND_H_
 #define SMASH_COMMAND_H_
 
-#include <vector>
+#include <map>
 #include <ctime>
 #include <sys/types.h>
 
@@ -9,9 +9,9 @@
 #define COMMAND_MAX_ARGS (20)
 
 class Command {
-    char* cmd_line;
 public:
-    Command(const char* cmd_line): cmd_line(cmd_line) {}
+    char* cmd_line;
+    Command(char* cmd_line): cmd_line(cmd_line) {}
 
     virtual ~Command();
 
@@ -20,41 +20,41 @@ public:
     //virtual void prepare();
     //virtual void cleanup();
     // TODO: Add your extra methods if needed
-    const char* get_cmd_line() {
+    char* get_cmd_line() {
         return cmd_line;
     }
 };
 
-class BuiltInCommand : public Command {
+class BuiltInCommand: public Command {
 public:
-    BuiltInCommand(const char *cmd_line): Command(cmd_line) {}
+    BuiltInCommand(char *cmd_line);
 
     virtual ~BuiltInCommand() {}
 };
 
-class ExternalCommand : public Command {
+class ExternalCommand: public Command {
 public:
-    ExternalCommand(const char *cmd_line);
+    ExternalCommand(char *cmd_line);
 
     virtual ~ExternalCommand() {}
 
     void execute() override;
 };
 
-class PipeCommand : public Command {
+class PipeCommand: public Command {
     // TODO: Add your data members
 public:
-    PipeCommand(const char *cmd_line);
+    PipeCommand(char *cmd_line);
 
     virtual ~PipeCommand() {}
 
     void execute() override;
 };
 
-class RedirectionCommand : public Command {
+class RedirectionCommand: public Command {
     // TODO: Add your data members
 public:
-    explicit RedirectionCommand(const char *cmd_line);
+    explicit RedirectionCommand(char *cmd_line);
 
     virtual ~RedirectionCommand() {}
 
@@ -68,9 +68,9 @@ class JobsList;
 /*
  * 1. chprompt
  */
-class ChangePromptCommand : public BuiltInCommand {
+class ChangePromptCommand: public BuiltInCommand {
 public:
-    ChangePromptCommand(const char *cmd_line);
+    ChangePromptCommand(char *cmd_line);
 
     virtual ~ChangePromptCommand() {}
 
@@ -80,9 +80,9 @@ public:
 /*
  * 2. showpid
  */
-class ShowPidCommand : public BuiltInCommand {
+class ShowPidCommand: public BuiltInCommand {
 public:
-    ShowPidCommand(const char *cmd_line);
+    ShowPidCommand(char *cmd_line);
 
     virtual ~ShowPidCommand() {}
 
@@ -92,9 +92,9 @@ public:
 /*
  * 3. pwd
  */
-class GetCurrDirCommand : public BuiltInCommand {
+class GetCurrDirCommand: public BuiltInCommand {
 public:
-    GetCurrDirCommand(const char *cmd_line);
+    GetCurrDirCommand(char *cmd_line);
 
     virtual ~GetCurrDirCommand() {}
 
@@ -104,9 +104,10 @@ public:
 /*
  * 4. cd
  */
-class ChangeDirCommand : public BuiltInCommand {
+class ChangeDirCommand: public BuiltInCommand {
 public:
-    ChangeDirCommand(const char *cmd_line, char **plastPwd);
+    //ChangeDirCommand(char *cmd_line, char **plastPwd);
+    ChangeDirCommand(char *cmd_line);
 
     virtual ~ChangeDirCommand() {}
 
@@ -116,12 +117,12 @@ public:
 /*
  * 5. jobs
  */
-class JobsCommand : public BuiltInCommand {
+class JobsCommand: public BuiltInCommand {
     // TODO: Add your data members
 public:
     JobsList* jobs;
 
-    JobsCommand(const char *cmd_line, JobsList *jobs);
+    JobsCommand(char *cmd_line, JobsList *jobs);
 
     virtual ~JobsCommand() {}
 
@@ -131,11 +132,10 @@ public:
 /*
  * 6. fg
  */
-class ForegroundCommand : public BuiltInCommand {
+class ForegroundCommand: public BuiltInCommand {
     // TODO: Add your data members
 public:
-    JobsList *jobs;
-    ForegroundCommand(const char *cmd_line, JobsList *jobs);
+    ForegroundCommand(char *cmd_line);
 
     virtual ~ForegroundCommand() {}
 
@@ -145,11 +145,10 @@ public:
 /*
  * 7. bg
  */
-class BackgroundCommand : public BuiltInCommand {
+class BackgroundCommand: public BuiltInCommand {
     // TODO: Add your data members
 public:
-    JobsList *jobs;
-    BackgroundCommand(const char *cmd_line, JobsList *jobs);
+    BackgroundCommand(char *cmd_line);
 
     virtual ~BackgroundCommand() {}
 
@@ -159,45 +158,44 @@ public:
 /*
  * 8. quit
  */
-class QuitCommand : public BuiltInCommand {
+class QuitCommand: public BuiltInCommand {
 public:
     char *cmd_line;
-    JobsList *jobs;
 
-    QuitCommand(const char *cmd_line, JobsList *jobs);
+    QuitCommand(char *cmd_line);
 
     virtual ~QuitCommand() {}
 
     void execute() override;
 };
 
-class TimeoutCommand : public BuiltInCommand {
+class TimeoutCommand: public BuiltInCommand {
 /* Optional */
 // TODO: Add your data members
 public:
-    explicit TimeoutCommand(const char *cmd_line);
+    explicit TimeoutCommand(char *cmd_line);
 
     virtual ~TimeoutCommand() {}
 
     void execute() override;
 };
 
-class FareCommand : public BuiltInCommand {
+class FareCommand: public BuiltInCommand {
     /* Optional */
     // TODO: Add your data members
 public:
-    FareCommand(const char *cmd_line);
+    FareCommand(char *cmd_line);
 
     virtual ~FareCommand() {}
 
     void execute() override;
 };
 
-class SetcoreCommand : public BuiltInCommand {
+class SetcoreCommand: public BuiltInCommand {
     /* Optional */
     // TODO: Add your data members
 public:
-    SetcoreCommand(const char *cmd_line);
+    SetcoreCommand(char *cmd_line);
 
     virtual ~SetcoreCommand() {}
 
@@ -207,11 +205,11 @@ public:
 /*
  * 10. kill
  */
-class KillCommand : public BuiltInCommand {
+class KillCommand: public BuiltInCommand {
     /* Bonus */
     // TODO: Add your data members
 public:
-    KillCommand(const char *cmd_line, JobsList *jobs);
+    KillCommand(char *cmd_line, JobsList *jobs);
 
     virtual ~KillCommand() {}
 
@@ -229,9 +227,9 @@ public:
      * pid is assigned to the process by the kernel
      */
 
+    pid_t pid;
     time_t time;
     std::string command;
-    pid_t pid;
     bool stopped;
 
     JobEntry(pid_t pid, time_t time, std::string command, bool stopped);
@@ -250,14 +248,12 @@ public:
 
     ~JobsList() = default;
 
-    void addJob(Command *cmd, bool last_fg = false, bool isStopped = false);
-
+    void addJob(Command *cmd, pid_t pid, bool last_fg = false, bool isStopped = false);
     void printJobsList();
 
     void killAllJobs();
 
     void removeFinishedJobs();
-
     JobEntry *getJobById(int jobId);
 
     void removeJobById(int jobId);
@@ -280,7 +276,7 @@ public:
     JobEntry *current_job;
     JobsList smash_jobs_list;
 
-    Command *CreateCommand(const char *cmd_line);
+    Command *CreateCommand(char *cmd_line);
 
     SmallShell(SmallShell const &) = delete; // disable copy c'tor
     void operator=(SmallShell const &) = delete; // disable '=' operator
