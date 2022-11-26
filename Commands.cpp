@@ -530,15 +530,18 @@ void QuitCommand::execute() {
 }
 
 
-
 /// External commands ///
 
-ExternalCommand::ExternalCommand(char *cmd_line) : Command(cmd_line) {}
+ExternalCommand::ExternalCommand(char *cmd_line): Command(cmd_line) {}
 
 void ExternalCommand::execute(){ // Remember to update current_pid and current_cmd somewhere idgaf
-    _removeBackgroundSign(this->cmd_line);
     char* args[MAX_ARG_NUM];
     size_t size = _parseCommandLine(this->cmd_line, args);
+    char cmd_line_copy[MAX_LINE_LEN];
+    strcpy(cmd_line_copy, _trim(string(cmd_line)).c_str());
+
+    bool background = _isBackgroundCommand(cmd_line_copy);
+    if (background) _removeBackgroundSign(cmd_line_copy);
 
     pid_t pid = fork();
     if (pid == 0) { // Son, this is the actual external command
@@ -573,9 +576,17 @@ void ExternalCommand::execute(){ // Remember to update current_pid and current_c
         }
     }
     else { // Father, this is the smash shell
-        if (waitpid(pid, NULL, 0) == -1) { // In this case the process is in the foreground, so we wait for it. *Need to add background*
-            perror("smash error: waitpid failed");
-            return;
+        if (background){ // If background
+            instance.smash_jobs_list.addJob(this, pid);
+        }
+        else{ // If foreground
+            instance.current_pid = pid;
+            instance.current_command = cmd_line;
+
+            if (waitpid(pid, NULL, 0) == -1) {
+                perror("smash error: waitpid failed");
+                return;
+            }
         }
     }
 
@@ -597,8 +608,6 @@ void ExternalCommand::execute(){ // Remember to update current_pid and current_c
  *    invalid syntax - smash error: kill: invalid arguments
  *    kill() syscall fails - perror used to print proper error message
  */
-
-
 
 
 /*
