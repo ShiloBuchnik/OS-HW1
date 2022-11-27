@@ -168,6 +168,20 @@ void SmallShell::executeCommand(const char *cmd_line) {
     // Command* cmd = CreateCommand(cmd_line);
     // cmd->execute();
     // Please note that you must fork smash process for some commands (e.g., external commands....)
+
+    if (strcmp (cmd_line, "") == 0)
+        return;
+
+    SmallShell& instance = SmallShell::getInstance();
+
+    instance.smash_jobs_list.removeFinishedJobs();
+
+    Command* cmd = CreateCommand(cmd_line);
+    cmd->execute();
+    delete cmd;
+
+    current_command = "";
+    current_pid = -1;
 }
 
 
