@@ -42,8 +42,6 @@ public:
 };
 
 class PipeCommand: public Command {
-    // TODO: Add your data members
-
     std::string com1;
     std::string com2;
     std::string bar;
@@ -54,6 +52,8 @@ public:
     virtual ~PipeCommand() {}
 
     void execute() override;
+
+    void pipeErrorHandle(int pipe0, int pipe1);
 };
 
 class RedirectionCommand: public Command {
@@ -62,7 +62,7 @@ public:
     char* filename;
     bool is_append;
     bool is_success; // redirect_success, delete this comment later
-    int stdout_copy;
+    int fd_copy_of_stdout;
     int fd;
 
     explicit RedirectionCommand(char *cmd_line);
