@@ -314,8 +314,13 @@ void ChangeDirCommand::execute() {
             return;
         }
 
+        char cur_path[MAX_LINE_LEN];
+        getcwd(cur_path, MAX_LINE_LEN);
+
         if (chdir(instance.prev_dir.c_str()))
             perror("smash error: chdir failed"); // Previous directory is invalid - could it be?
+
+        instance.prev_dir = cur_path;
     }
     else { // User entered a path
         char cur_path[MAX_LINE_LEN];
@@ -576,7 +581,7 @@ void QuitCommand::execute() {
 ExternalCommand::ExternalCommand(char *cmd_line): Command(cmd_line) {}
 
 void ExternalCommand::execute(){ // Remember to update current_pid and current_cmd somewhere idgaf
-    char* args[MAX_ARG_NUM];
+    char** args = (char**) malloc(MAX_ARG_NUM * sizeof(char *));
     size_t size = _parseCommandLine(this->cmd_line, args);
     char cmd_line_copy[MAX_LINE_LEN];
     strcpy(cmd_line_copy, _trim(string(cmd_line)).c_str());
@@ -596,10 +601,16 @@ void ExternalCommand::execute(){ // Remember to update current_pid and current_c
             strcpy(path, "/bin/bash\0");
 
             char* new_args[MAX_ARG_NUM + 3];
-            new_args[0] = (char*)"bash\0";
-            new_args[1] = (char*)"-c\0";
+            new_args[0] = (char*) malloc(20);
+            new_args[1] = (char*) malloc(20);
+            strcpy(new_args[0], "bash\0");
+            strcpy(new_args[1], "-c\0");
+
+
+            //new_args[0] = (char*)"bash\0";
+            //new_args[1] = (char*)"-c\0";
             size_t i = 2;
-            for (; i < size + 2; i++) new_args[i] = args[i];
+            for (; i < size + 2; i++) new_args[i] = args[i - 2];
             new_args[i] = NULL;
 
             if (execv(path, new_args)) { // Passing non-const to a const argument is an implicit conversion, all good
@@ -619,9 +630,8 @@ void ExternalCommand::execute(){ // Remember to update current_pid and current_c
     else { // Father, this is the smash shell
         SmallShell& instance = SmallShell::getInstance();
 
-        if (background){ // If background
-            instance.smash_jobs_list.addJob(this, pid);
-        }
+        if (background) instance.smash_jobs_list.addJob(this, pid); // If background
+
         else{ // If foreground
             instance.current_pid = pid;
             instance.current_command = cmd_line;

@@ -171,8 +171,6 @@ public:
  */
 class QuitCommand: public BuiltInCommand {
 public:
-    char *cmd_line;
-
     QuitCommand(char *cmd_line);
 
     virtual ~QuitCommand() {}
