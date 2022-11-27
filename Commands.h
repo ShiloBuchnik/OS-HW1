@@ -13,7 +13,7 @@ public:
     char* cmd_line;
     Command(char* cmd_line): cmd_line(cmd_line) {}
 
-    virtual ~Command();
+    virtual ~Command() {}
 
     virtual void execute() = 0;
 
@@ -133,7 +133,7 @@ class JobsCommand: public BuiltInCommand {
 public:
     JobsList* jobs;
 
-    JobsCommand(char *cmd_line, JobsList *jobs);
+    JobsCommand(char *cmd_line, JobsList* jobs);
 
     virtual ~JobsCommand() {}
 
@@ -284,12 +284,10 @@ public:
     std::string prev_dir; // For cd
     bool last_fg; // True if last command was 'fg'
     int fg_job_id; // Stores the job id of the last job we removed out of jobList using 'fg'
-    JobEntry *current_job;
+    JobEntry* current_job;
     JobsList smash_jobs_list;
     pid_t current_pid;
     std::string current_command;
-    Command *CreateCommand(char *cmd_line);
-
     bool is_pipe;
 
     SmallShell(SmallShell const &) = delete; // disable copy c'tor
@@ -303,16 +301,10 @@ public:
 
     ~SmallShell();
 
+    Command* CreateCommand(char *cmd_line);
+
     void executeCommand(const char *cmd_line);
     // TODO: add extra methods as needed
-
-    void updateCurrentJob(JobEntry* j) {
-        current_job = j;
-    }
-
-    JobEntry* getCurrentJob() {
-        return current_job;
-    }
 };
 
 #endif //SMASH_COMMAND_H_

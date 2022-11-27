@@ -65,6 +65,7 @@ bool _isBackgroundComamnd(char *cmd_line) {
     return str[str.find_last_not_of(WHITESPACE)] == '&';
 }
 
+// Removes '&' from END of command
 void _removeBackgroundSign(char *cmd_line) {
     const string str(cmd_line);
     // find last character other than spaces
@@ -136,52 +137,65 @@ SmallShell::~SmallShell() {
 * Creates and returns a pointer to Command class which matches the given command line (cmd_line)
 * This is the factory method
 */
-/* Things to do:
-1) set 'last_fg=false' before everything, and then if 'fg' is chosen, set 'last_fg=true' */
-Command *SmallShell::CreateCommand(char *cmd_line) {
-    /*// For example:
+Command* SmallShell::CreateCommand(char *cmd_line) {
+    string trim_cmd = _trim(string(cmd_line));
 
-    string cmd_s = _trim(string(cmd_line));
-    string firstWord = cmd_s.substr(0, cmd_s.find_first_of(" \n"));
+    /// Return if code doesn't work
+    /*if (!checker(cmd_s) && _isBackgroundCommand(cmd_s.c_str())) {
+        char cmd_line_copy[COMMAND_ARGS_MAX_LENGTH];
+        strcpy(cmd_line_copy, cmd_s.c_str());
+        _removeBackgroundSign(cmd_line_copy);
+        cmd_s = cmd_line_copy;
+    } */
 
-    if (firstWord.compare("pwd") == 0) {
-        return new GetCurrDirCommand(cmd_line);
+    string first_word = trim_cmd.substr(0, trim_cmd.find_first_of("& \n")); // Finds first occurrence of '&', or ' ' or '\n'
+
+    if (strstr(cmd_line, ">") || strstr(cmd_line, ">>")) return new RedirectionCommand(cmd_line);
+    if (strstr(cmd_line, "|") || strstr(cmd_line, "|&")) return new PipeCommand(cmd_line);
+
+    last_fg = false;
+    if (first_word == "chprompt") return new ChangePromptCommand(cmd_line);
+
+    else if (first_word == "showpid") return new ShowPidCommand(cmd_line);
+
+    else if (first_word == "pwd") return new GetCurrDirCommand(cmd_line);
+
+    else if (first_word == "cd") return new ChangeDirCommand(cmd_line);
+
+    else if (first_word == "jobs") return new JobsCommand(cmd_line, &(this->smash_jobs_list));
+
+    else if (first_word == "fg"){
+        last_fg = true;
+        return new ForegroundCommand(cmd_line);
     }
-    else if (firstWord.compare("showpid") == 0) {
-        return new ShowPidCommand(cmd_line);
-    }
-    else if ...
-    .....
-    else {
-        return new ExternalCommand(cmd_line);
-    }
-    return nullptr;*/
+
+    else if (first_word == "bg") return new BackgroundCommand(cmd_line);
+
+    else if (first_word == "quit") return new QuitCommand(cmd_line);
+
+    /// Get back to it if we have time
+    //else if (first_word == "kill") return new KillCommand(cmd_line);
+
+    else return new ExternalCommand(cmd_line);
 }
 
-
-
-
-
 void SmallShell::executeCommand(const char *cmd_line) {
-    // TODO: Add your implementation here
     // for example:
     // Command* cmd = CreateCommand(cmd_line);
     // cmd->execute();
     // Please note that you must fork smash process for some commands (e.g., external commands....)
 
-    if (strcmp (cmd_line, "") == 0)
-        return;
+    if (strcmp(cmd_line, "") == 0) return;
 
     SmallShell& instance = SmallShell::getInstance();
-
     instance.smash_jobs_list.removeFinishedJobs();
 
-    Command* cmd = CreateCommand(cmd_line);
+    Command* cmd = CreateCommand((char*)cmd_line);
     cmd->execute();
     delete cmd;
 
-    current_command = "";
-    current_pid = -1;
+    this->current_command = "";
+    this->current_pid = -1;
 }
 
 
@@ -208,9 +222,9 @@ BuiltInCommand::BuiltInCommand(char *cmd_line): Command(cmd_line) {
 ChangePromptCommand::ChangePromptCommand(char *cmd_line): BuiltInCommand(cmd_line) {}
 
 void ChangePromptCommand::execute() {
-    char **args = (char **) malloc(MAX_ARG_NUM * sizeof(char *));
+    char** args = (char**) malloc(MAX_ARG_NUM * sizeof(char *));
     size_t size = _parseCommandLine(this->cmd_line, args);
-    SmallShell &instance = SmallShell::getInstance();
+    SmallShell& instance = SmallShell::getInstance();
 
     if (size == 1) instance.prompt = "smash";
     else instance.prompt = args[1];
@@ -258,7 +272,7 @@ void GetCurrDirCommand::execute() {
 
     if (buf != nullptr) {
         getcwd(buf, size);
-        cout << buf;
+        cout << buf << endl;
         free(buf);
     }
 }
@@ -431,13 +445,13 @@ void ForegroundCommand::execute() {
     instance.current_pid = pid;
     instance.current_command = job->command;
     jobs.removeJobById(job_id);
-    instance.updateCurrentJob(job);
+    instance.current_job = job;
     if (waitpid(pid, NULL, WUNTRACED) == -1){
         perror("smash error: waitpid failed");
         freeArgs(args);
         return;
     }
-    instance.updateCurrentJob(nullptr);
+    instance.current_job = nullptr;
 
     freeArgs(args);
 }
@@ -644,7 +658,7 @@ void ExternalCommand::execute(){ // Remember to update current_pid and current_c
  */
 
 // JobEntry c'tor
-//JobEntry::JobEntry(pid_t pid, size_t time, string command, bool stopped): pid(pid), time(time), command(command), stopped(stopped) {}
+JobEntry::JobEntry(pid_t pid, time_t time, string command, bool stopped): pid(pid), time(time), command(command), stopped(stopped) {}
 
 // JobsList c'tor
 JobsList::JobsList(): jobs_map() {}
