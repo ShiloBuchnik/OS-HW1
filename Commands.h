@@ -19,7 +19,6 @@ public:
 
     /*virtual void prepare();
     virtual void cleanup();
-    // TODO: Add your extra methods if needed
     char* get_cmd_line() {
         return cmd_line;
     }*/
