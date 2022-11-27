@@ -86,7 +86,7 @@ void _removeBackgroundSign(char *cmd_line) {
 
 
 
-// Helper functions:
+/// Helper functions:
 
 /* // This function returns a vector containing the words in 'cmd_line'
 vector<char*> getArgs(const char* cmd_line){
@@ -124,7 +124,7 @@ void PipeCommand::pipeErrorHandle(int pipe0, int pipe1){
 
 
 SmallShell::SmallShell(): prompt("smash"), prev_dir(""), last_fg(false), fg_job_id(-1), current_job(nullptr), smash_jobs_list(),
-                          current_pid(-1), current_command(), is_pipe(false) {
+                          current_pid(-1), current_command(""), is_pipe(false) {
 // TODO: add your implementation
 }
 
@@ -134,30 +134,33 @@ SmallShell::~SmallShell() {
 
 /**
 * Creates and returns a pointer to Command class which matches the given command line (cmd_line)
- *  This is the factory method
+* This is the factory method
 */
 /* Things to do:
 1) set 'last_fg=false' before everything, and then if 'fg' is chosen, set 'last_fg=true' */
 Command *SmallShell::CreateCommand(char *cmd_line) {
-    // For example:
-/*
-  string cmd_s = _trim(string(cmd_line));
-  string firstWord = cmd_s.substr(0, cmd_s.find_first_of(" \n"));
+    /*// For example:
 
-  if (firstWord.compare("pwd") == 0) {
-    return new GetCurrDirCommand(cmd_line);
-  }
-  else if (firstWord.compare("showpid") == 0) {
-    return new ShowPidCommand(cmd_line);
-  }
-  else if ...
-  .....
-  else {
-    return new ExternalCommand(cmd_line);
-  }
-  */
-    return nullptr;
+    string cmd_s = _trim(string(cmd_line));
+    string firstWord = cmd_s.substr(0, cmd_s.find_first_of(" \n"));
+
+    if (firstWord.compare("pwd") == 0) {
+        return new GetCurrDirCommand(cmd_line);
+    }
+    else if (firstWord.compare("showpid") == 0) {
+        return new ShowPidCommand(cmd_line);
+    }
+    else if ...
+    .....
+    else {
+        return new ExternalCommand(cmd_line);
+    }
+    return nullptr;*/
 }
+
+
+
+
 
 void SmallShell::executeCommand(const char *cmd_line) {
     // TODO: Add your implementation here
@@ -638,7 +641,7 @@ JobsList::JobsList(): jobs_map() {}
 void JobsList::addJob(Command *cmd, pid_t pid, bool last_fg, bool isStopped) {
     //before adding new jobs to the list, finished jobs are deleted from list
     removeFinishedJobs(); // Get back to here when implementing external background commands
-    string command(cmd->get_cmd_line());
+    string command(cmd->cmd_line);
     SmallShell &instance = SmallShell::getInstance();
 
     if (last_fg) jobs_map.emplace <int, JobEntry> ((int)instance.fg_job_id, {pid, time(nullptr), command, isStopped});

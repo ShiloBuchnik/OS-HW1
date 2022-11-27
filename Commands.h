@@ -17,12 +17,12 @@ public:
 
     virtual void execute() = 0;
 
-    //virtual void prepare();
-    //virtual void cleanup();
+    /*virtual void prepare();
+    virtual void cleanup();
     // TODO: Add your extra methods if needed
     char* get_cmd_line() {
         return cmd_line;
-    }
+    }*/
 };
 
 class BuiltInCommand: public Command {
