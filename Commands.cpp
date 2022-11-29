@@ -730,8 +730,20 @@ void JobsList::killAllJobs() {
 /*
  * removes finished jobs from list
  */
-void JobsList::removeFinishedJobs() { // Waiting for completion of pipe
-    // TBC
+void JobsList::removeFinishedJobs(){
+    if (jobs_map.empty()) return;
+
+    SmallShell& instance = SmallShell::getInstance();
+
+    for (auto it = jobs_map.begin(); it != jobs_map.end();){
+        if(!instance.is_pipe){
+            JobEntry job = (*it).second;
+            int ret_wait = waitpid(job.pid, NULL, WNOHANG);
+
+            if (ret_wait == job.pid || ret_wait == -1) it = jobs_map.erase(it); // 'erase' returns an iterator to the element after erased element
+            else it++;
+        }
+    }
 }
 
 /*
