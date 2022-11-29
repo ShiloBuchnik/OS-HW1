@@ -285,7 +285,7 @@ private:
     SmallShell();
 
 public:
-    std::string prompt = "smash"; // For chprompt
+    std::string prompt; // For chprompt
     std::string prev_dir; // For cd
     bool last_fg; // True if last command was 'fg'
     int fg_job_id; // Stores the job id of the last job we removed out of jobList using 'fg'

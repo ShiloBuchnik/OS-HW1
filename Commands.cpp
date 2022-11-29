@@ -1020,8 +1020,7 @@ void FareCommand::execute() {
     string l;
     vector<string> lines;
 
-    while (getline(file, l))
-        lines.push_back(l);
+    while (getline(file, l)) lines.push_back(l);
 
     file.close();
     file.open(file_name, ios::out);
@@ -1043,5 +1042,4 @@ void FareCommand::execute() {
 
     file.close();
     cout << "replaced " << c << " instances of the string \"" << source << "\"" << endl;
-
 }
