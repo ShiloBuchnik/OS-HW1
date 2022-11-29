@@ -13,7 +13,7 @@ public:
     char* cmd_line;
     Command(char* cmd_line): cmd_line(cmd_line) {}
 
-    virtual ~Command() {}
+    virtual ~Command()  = default;
 
     virtual void execute() = 0;
 
@@ -191,7 +191,15 @@ public:
 class FareCommand: public BuiltInCommand {
     /* Optional */
     // TODO: Add your data members
+
 public:
+
+    std::string file_name;
+    std::string source;
+    std::string destination;
+
+    bool failed = false;
+
     FareCommand(char *cmd_line);
 
     virtual ~FareCommand() {}
@@ -277,7 +285,7 @@ private:
     SmallShell();
 
 public:
-    std::string prompt; // For chprompt
+    std::string prompt = "smash"; // For chprompt
     std::string prev_dir; // For cd
     bool last_fg; // True if last command was 'fg'
     int fg_job_id; // Stores the job id of the last job we removed out of jobList using 'fg'
