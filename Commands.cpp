@@ -103,14 +103,14 @@ vector<char*> getArgs(const char* cmd_line){
 } */
 
 // Args is an array of pointers. This function frees said pointers, and then frees the array itself
-void freeArgs(char **args) {
-    for (int i = 0; i < MAX_ARG_NUM; i++) free(args[i]);
+void freeArgs(char **args, size_t size) {
+    for (int i = 0; i < size; i++) free(args[i]);
     free(args);
 }
 
 // Checks if a command contains '*' or '?'
-bool isComplexCommand(char **args) {
-    for (int i = 0; i < MAX_ARG_NUM; i++) {
+bool isComplexCommand(char **args, size_t size) {
+    for (int i = 0; i < size; i++) {
         if (strchr(args[i], '*') || strchr(args[i], '?')) return true;
     }
 
@@ -222,14 +222,14 @@ BuiltInCommand::BuiltInCommand(char *cmd_line): Command(cmd_line) {
 ChangePromptCommand::ChangePromptCommand(char *cmd_line): BuiltInCommand(cmd_line) {}
 
 void ChangePromptCommand::execute() {
-    char** args = (char**) malloc(MAX_ARG_NUM * sizeof(char *));
+    char** args = (char**) malloc(MAX_ARG_NUM * sizeof(char*));
     size_t size = _parseCommandLine(this->cmd_line, args);
     SmallShell& instance = SmallShell::getInstance();
 
     if (size == 1) instance.prompt = "smash";
     else instance.prompt = args[1];
 
-    freeArgs(args);
+    freeArgs(args, size);
 }
 
 /*
@@ -330,7 +330,7 @@ void ChangeDirCommand::execute() {
         else instance.prev_dir = cur_path;
     }
 
-    freeArgs(args);
+    freeArgs(args, size);
 }
 
 /*
@@ -390,7 +390,7 @@ void ForegroundCommand::execute() {
     int job_id = 0;
     if (size > 2) {
         cerr << "smash error: fg: invalid arguments" << endl;
-        freeArgs(args);
+        freeArgs(args, size);
         return;
     }
     //job_id is specified
@@ -399,11 +399,11 @@ void ForegroundCommand::execute() {
             job_id = atoi(args[1]);
         } catch (invalid_argument &e) {
             cerr << "smash error: fg: invalid arguments" << endl;
-            freeArgs(args);
+            freeArgs(args, size);
             return;
         } catch (out_of_range &e) {
             cerr << "smash error: fg: invalid arguments" << endl;
-            freeArgs(args);
+            freeArgs(args, size);
             return;
         }
     }
@@ -417,14 +417,14 @@ void ForegroundCommand::execute() {
     //no job_id && jobs list is empty
     if (!job && size == 1){
         cerr << "smash error: fg: jobs list is empty" << endl;
-        freeArgs(args);
+        freeArgs(args, size);
         return;
     }
 
     //job_id && jobs list is empty
     if (!job && size == 2){
         cerr << "smash error: fg: job-id " << args[1] << " does not exist" << endl;
-        freeArgs(args);
+        freeArgs(args, size);
         return;
     }
 
@@ -434,7 +434,7 @@ void ForegroundCommand::execute() {
         //job_id && the job with that id doesn't  exist
         if (!job){
             cerr << "smash error: fg: job-id " << job_id << " does not exist" << endl;
-            freeArgs(args);
+            freeArgs(args, size);
             return;
         }
     }
@@ -453,12 +453,12 @@ void ForegroundCommand::execute() {
     instance.current_job = job;
     if (waitpid(pid, NULL, WUNTRACED) == -1){
         perror("smash error: waitpid failed");
-        freeArgs(args);
+        freeArgs(args, size);
         return;
     }
     instance.current_job = nullptr;
 
-    freeArgs(args);
+    freeArgs(args, size);
 }
 
 /*
@@ -491,7 +491,7 @@ void BackgroundCommand::execute() {
 
     if (size > 2) {
         cerr << "smash error: bg: invalid arguments" << endl;
-        freeArgs(args);
+        freeArgs(args, size);
         return;
     }
 
@@ -503,22 +503,22 @@ void BackgroundCommand::execute() {
             job_id = atoi(args[1]);
         } catch (invalid_argument &e) {
             cerr << "smash error: bg: invalid arguments" << endl;
-            freeArgs(args);
+            freeArgs(args, size);
             return;
         } catch (out_of_range &e) {
             cerr << "smash error: bg: invalid arguments" << endl;
-            freeArgs(args);
+            freeArgs(args, size);
             return;
         }
         job = jobs.getJobById(job_id);
         if (!job) {
             cerr << "smash error: bg: job-id " << job_id << " does not exist" << endl;
-            freeArgs(args);
+            freeArgs(args, size);
             return;
         }
         if (!job->stopped) {
             cerr << "smash error: bg: job-id " << job_id << " is already running in the background" << endl;
-            freeArgs(args);
+            freeArgs(args, size);
             return;
         }
     } else {
@@ -526,7 +526,7 @@ void BackgroundCommand::execute() {
         job = jobs.getLastStoppedJob(&job_id);
         if (!job) {
             cerr << "smash error: bg: there is no stopped jobs to resume" << endl;
-            freeArgs(args);
+            freeArgs(args, size);
             return;
         }
     }
@@ -536,7 +536,7 @@ void BackgroundCommand::execute() {
     job->stopped = false;
     kill(pid, SIGCONT);
 
-    freeArgs(args);
+    freeArgs(args, size);
 }
 
 /*
@@ -572,7 +572,7 @@ void QuitCommand::execute() {
     }
     else exit(0);
 
-    freeArgs(args);
+    freeArgs(args, size);
 }
 
 
@@ -587,28 +587,23 @@ void ExternalCommand::execute(){ // Remember to update current_pid and current_c
     strcpy(cmd_line_copy, _trim(string(cmd_line)).c_str());
 
     bool background = _isBackgroundComamnd(cmd_line_copy);
+    if (background) cout << "bitch";
     if (background) _removeBackgroundSign(cmd_line_copy);
 
     pid_t pid = fork();
     if (pid == 0) { // Son, this is the actual external command
-        if (setpgrp()) { // Unrelated to the logic, ignore it
+        if (setpgrp() == SYSCALL_FAILED) { // Unrelated to the logic, ignore it
             perror("smash error: setpgrp failed");
             exit(-1);
         }
 
-        if (isComplexCommand(args)) { // Complex command
+        if (isComplexCommand(args, size)) { // Complex command
             char* path = (char*) malloc(MAX_LINE_LEN * sizeof(char));
             strcpy(path, "/bin/bash\0");
 
             char* new_args[MAX_ARG_NUM + 3];
-            new_args[0] = (char*) malloc(20);
-            new_args[1] = (char*) malloc(20);
-            strcpy(new_args[0], "bash\0");
-            strcpy(new_args[1], "-c\0");
-
-
-            //new_args[0] = (char*)"bash\0";
-            //new_args[1] = (char*)"-c\0";
+            new_args[0] = (char*)"bash\0";
+            new_args[1] = (char*)"-c\0";
             size_t i = 2;
             for (; i < size + 2; i++) new_args[i] = args[i - 2];
             new_args[i] = NULL;
@@ -643,7 +638,7 @@ void ExternalCommand::execute(){ // Remember to update current_pid and current_c
         }
     }
 
-    freeArgs(args);
+    freeArgs(args, size);
 }
 
 
@@ -782,7 +777,7 @@ JobEntry *JobsList::getLastStoppedJob(int *jobId) {
 
 RedirectionCommand::RedirectionCommand(char *cmd_line): Command(cmd_line){
     char** args = (char**) malloc(MAX_ARG_NUM * sizeof(char*));
-    _parseCommandLine(this->cmd_line, args);
+    size_t size = _parseCommandLine(this->cmd_line, args);
     string str = string(cmd_line);
     string delim = str.find(">") != string::npos ? ">" : ">>";
 
@@ -807,7 +802,7 @@ RedirectionCommand::RedirectionCommand(char *cmd_line): Command(cmd_line){
     this->fd = 0;
 
     prepare();
-    freeArgs(args);
+    freeArgs(args, size);
 }
 
 void RedirectionCommand::prepare(){
