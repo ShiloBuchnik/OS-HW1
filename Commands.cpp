@@ -8,6 +8,8 @@
 #include "Commands.h"
 #include <stdexcept>
 #include <fcntl.h>
+#include <fstream>
+#include <vector>
 
 using namespace std;
 
@@ -172,6 +174,8 @@ Command* SmallShell::CreateCommand(char *cmd_line) {
     else if (first_word == "bg") return new BackgroundCommand(cmd_line);
 
     else if (first_word == "quit") return new QuitCommand(cmd_line);
+
+    else if (first_word == "fare") return new FareCommand(cmd_line);
 
     /// Get back to it if we have time
     //else if (first_word == "kill") return new KillCommand(cmd_line);
@@ -982,4 +986,62 @@ void PipeCommand::execute(){
         perror("smash error: waitpid failed");
         return;
     }
+}
+
+FareCommand::FareCommand(char *cmd_line) : BuiltInCommand(cmd_line) {
+    char** args = (char**) malloc(MAX_ARG_NUM * sizeof(char*));
+    size_t size = _parseCommandLine(this->cmd_line, args);
+
+    if (size != 4){
+        cerr << "smash error: fare: invalid arguments" << endl;
+        freeArgs(args, size);
+        failed = true;
+        return;
+    }
+
+    file_name = args[1];
+    source = args[2];
+    destination = args[3];
+
+    freeArgs(args, size);
+}
+
+void FareCommand::execute() {
+    if (failed) return;
+
+    fstream file;
+    file.open(file_name, ios::in);
+
+    if (!file.is_open()){
+        perror("smash error: open failed");
+        return;
+    }
+
+    string l;
+    vector<string> lines;
+
+    while (getline(file, l))
+        lines.push_back(l);
+
+    file.close();
+    file.open(file_name, ios::out);
+    int c = 0;
+    for (string line : lines){
+        if (line.find(source) != string::npos){
+            size_t i = 0;
+            while (true){
+                i = line.find(source, i);
+                if (i == string::npos) break;
+                line.erase(i, source.size());
+                line.insert(i, destination);
+                i += destination.size();
+                c++;
+            }
+        }
+        file << line << endl;
+    }
+
+    file.close();
+    cout << "replaced " << c << " instances of the string \"" << source << "\"" << endl;
+
 }
