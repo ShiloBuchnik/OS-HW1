@@ -104,13 +104,13 @@ vector<char*> getArgs(const char* cmd_line){
 
 // Args is an array of pointers. This function frees said pointers, and then frees the array itself
 void freeArgs(char **args, size_t size) {
-    for (int i = 0; i < size; i++) free(args[i]);
+    for (size_t i = 0; i < size; i++) free(args[i]);
     free(args);
 }
 
 // Checks if a command contains '*' or '?'
 bool isComplexCommand(char **args, size_t size) {
-    for (int i = 0; i < size; i++) {
+    for (size_t i = 0; i < size; i++) {
         if (strchr(args[i], '*') || strchr(args[i], '?')) return true;
     }
 
@@ -302,6 +302,7 @@ void ChangeDirCommand::execute() {
 
     if (size == 1) { // No arguments
         cerr << "smash error:> " << cmd_line << endl;
+        return;
     }
     else if (size > 2) {
         cerr << "smash error: cd: too many arguments" << endl;
@@ -582,13 +583,17 @@ ExternalCommand::ExternalCommand(char *cmd_line): Command(cmd_line) {}
 
 void ExternalCommand::execute(){ // Remember to update current_pid and current_cmd somewhere idgaf
     char** args = (char**) malloc(MAX_ARG_NUM * sizeof(char *));
-    size_t size = _parseCommandLine(this->cmd_line, args);
-    char cmd_line_copy[MAX_LINE_LEN];
-    strcpy(cmd_line_copy, _trim(string(cmd_line)).c_str());
 
+    char cmd_line_copy[MAX_LINE_LEN];
+    strcpy(cmd_line_copy, this->cmd_line);
     bool background = _isBackgroundComamnd(cmd_line_copy);
-    if (background) cout << "bitch";
-    if (background) _removeBackgroundSign(cmd_line_copy);
+    _removeBackgroundSign(cmd_line_copy);
+
+    size_t size = _parseCommandLine(cmd_line_copy, args);
+
+    /*for (size_t i = 0; i < size; i++){
+        cout << args[i] << endl;
+    } */
 
     pid_t pid = fork();
     if (pid == 0) { // Son, this is the actual external command
@@ -626,12 +631,11 @@ void ExternalCommand::execute(){ // Remember to update current_pid and current_c
         SmallShell& instance = SmallShell::getInstance();
 
         if (background) instance.smash_jobs_list.addJob(this, pid); // If background
-
         else{ // If foreground
             instance.current_pid = pid;
             instance.current_command = cmd_line;
 
-            if (waitpid(pid, NULL, 0) == -1) {
+            if (waitpid(pid, NULL, 2) == -1) {
                 perror("smash error: waitpid failed");
                 return;
             }

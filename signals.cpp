@@ -14,7 +14,7 @@ void ctrlZHandler(int sig_num){
     if (instance.current_pid != -1){
         Command* command = instance.CreateCommand((char*)instance.current_command.c_str());
         if (instance.last_fg) instance.smash_jobs_list.addJob(command, instance.current_pid, true, true); // If last was foreground
-        else instance.smash_jobs_list.addJob(command, instance.current_pid, true, true);
+        else instance.smash_jobs_list.addJob(command, instance.current_pid, false, true);
 
         kill(instance.current_pid, SIGSTOP);
         cout << "smash: process " << instance.current_pid << " was stopped" << endl;
