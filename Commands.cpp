@@ -1,5 +1,5 @@
 #include <unistd.h>
-#include <string.h>
+#include <cstring>
 #include <iostream>
 #include <map>
 #include <sstream>
@@ -16,7 +16,7 @@ using namespace std;
 #define MAX_LINE_LEN 80
 #define MAX_ARG_NUM 21
 
-#define SYSCALL_FAILED -1
+#define SYSCALL_FAILED (-1)
 
 const std::string WHITESPACE = " \n\r\t\f\v";
 
@@ -55,7 +55,7 @@ int _parseCommandLine(char *cmd_line, char **args) {
         args[i] = (char *) malloc(s.length() + 1);
         memset(args[i], 0, s.length() + 1);
         strcpy(args[i], s.c_str());
-        args[++i] = NULL;
+        args[++i] = nullptr;
     }
     return i;
 
@@ -106,14 +106,18 @@ vector<char*> getArgs(const char* cmd_line){
 
 // Args is an array of pointers. This function frees said pointers, and then frees the array itself
 void freeArgs(char **args, size_t size) {
-    for (size_t i = 0; i < size; i++) free(args[i]);
+    for (size_t i = 0; i < size; i++) {
+	  free(args[i]);
+	}
     free(args);
 }
 
 // Checks if a command contains '*' or '?'
 bool isComplexCommand(char **args, size_t size) {
     for (size_t i = 0; i < size; i++) {
-        if (strchr(args[i], '*') || strchr(args[i], '?')) return true;
+        if (strchr(args[i], '*') || strchr(args[i], '?')){
+		  return true;
+		}
     }
 
     return false;
@@ -121,8 +125,12 @@ bool isComplexCommand(char **args, size_t size) {
 
 // To prevent boilerplate code
 void PipeCommand::pipeErrorHandle(int pipe0, int pipe1){
-    if (close(pipe0) == SYSCALL_FAILED) perror("smash error: close failed");
-    if (close(pipe1) == SYSCALL_FAILED) perror("smash error: close failed");
+    if (close(pipe0) == SYSCALL_FAILED) {
+	  perror("smash error: close failed");
+	}
+    if (close(pipe1) == SYSCALL_FAILED) {
+	  perror("smash error: close failed");
+	}
 }
 
 
@@ -152,30 +160,54 @@ Command* SmallShell::CreateCommand(char *cmd_line) {
 
     string first_word = trim_cmd.substr(0, trim_cmd.find_first_of("& \n")); // Finds first occurrence of '&', or ' ' or '\n'
 
-    if (strstr(cmd_line, ">") || strstr(cmd_line, ">>")) return new RedirectionCommand(cmd_line);
-    if (strstr(cmd_line, "|") || strstr(cmd_line, "|&")) return new PipeCommand(cmd_line);
+    if (strstr(cmd_line, ">") || strstr(cmd_line, ">>")) {
+	  return new RedirectionCommand(cmd_line);
+	}
+    if (strstr(cmd_line, "|") || strstr(cmd_line, "|&")) {
+	  return new PipeCommand(cmd_line);
+	}
 
     last_fg = false;
-    if (first_word == "chprompt") return new ChangePromptCommand(cmd_line);
+    if (first_word == "chprompt") {
+	  return new ChangePromptCommand(cmd_line);
+	}
 
-    else if (first_word == "showpid") return new ShowPidCommand(cmd_line);
+    else if (first_word == "showpid") {
+	  return new ShowPidCommand(cmd_line);
+	}
 
-    else if (first_word == "pwd") return new GetCurrDirCommand(cmd_line);
+    else if (first_word == "pwd") {
+	  return new GetCurrDirCommand(cmd_line);
+	}
 
-    else if (first_word == "cd") return new ChangeDirCommand(cmd_line);
+    else if (first_word == "cd") {
+	  return new ChangeDirCommand(cmd_line);
+	}
 
-    else if (first_word == "jobs") return new JobsCommand(cmd_line, &(this->smash_jobs_list));
+    else if (first_word == "jobs") {
+	  return new JobsCommand(cmd_line, &(this->smash_jobs_list));
+	}
 
     else if (first_word == "fg"){
         last_fg = true;
         return new ForegroundCommand(cmd_line);
     }
 
-    else if (first_word == "bg") return new BackgroundCommand(cmd_line);
+    else if (first_word == "bg") {
+	  return new BackgroundCommand(cmd_line);
+	}
 
-    else if (first_word == "quit") return new QuitCommand(cmd_line);
+    else if (first_word == "quit") {
+	  return new QuitCommand(cmd_line);
+	}
 
-    else if (first_word == "fare") return new FareCommand(cmd_line);
+    else if (first_word == "fare") {
+	  return new FareCommand(cmd_line);
+	}
+
+    else if (first_word == "kill") {
+	  return new KillCommand(cmd_line);
+	}
 
     /// Get back to it if we have time
     //else if (first_word == "kill") return new KillCommand(cmd_line);
@@ -230,8 +262,12 @@ void ChangePromptCommand::execute() {
     size_t size = _parseCommandLine(this->cmd_line, args);
     SmallShell& instance = SmallShell::getInstance();
 
-    if (size == 1) instance.prompt = "smash";
-    else instance.prompt = args[1];
+    if (size == 1) {
+	  instance.prompt = "smash";
+	}
+    else {
+	  instance.prompt = args[1];
+	}
 
     freeArgs(args, size);
 }
@@ -331,8 +367,12 @@ void ChangeDirCommand::execute() {
         char cur_path[MAX_LINE_LEN];
         getcwd(cur_path, MAX_LINE_LEN);
 
-        if (chdir(args[1])) perror("smash error: chdir failed"); // Path is invalid
-        else instance.prev_dir = cur_path;
+        if (chdir(args[1])) {
+		  perror("smash error: chdir failed"); // Path is invalid
+		}
+        else {
+		  instance.prev_dir = cur_path;
+		}
     }
 
     freeArgs(args, size);
@@ -456,7 +496,7 @@ void ForegroundCommand::execute() {
     instance.current_command = job->command;
     jobs.removeJobById(job_id);
     instance.current_job = job;
-    if (waitpid(pid, NULL, WUNTRACED) == -1){
+    if (waitpid(pid, nullptr, WUNTRACED) == -1){
         perror("smash error: waitpid failed");
         freeArgs(args, size);
         return;
@@ -615,7 +655,7 @@ void ExternalCommand::execute(){ // Remember to update current_pid and current_c
             new_args[1] = (char*)"-c\0";
             size_t i = 2;
             for (; i < size + 2; i++) new_args[i] = args[i - 2];
-            new_args[i] = NULL;
+            new_args[i] = nullptr;
 
             if (execv(path, new_args)) { // Passing non-const to a const argument is an implicit conversion, all good
                 perror("smash error: execv failed");
@@ -634,12 +674,14 @@ void ExternalCommand::execute(){ // Remember to update current_pid and current_c
     else { // Father, this is the smash shell
         SmallShell& instance = SmallShell::getInstance();
 
-        if (background) instance.smash_jobs_list.addJob(this, pid); // If background
+        if (background) {
+		  instance.smash_jobs_list.addJob(this, pid); // If background
+		}
         else{ // If foreground
             instance.current_pid = pid;
             instance.current_command = cmd_line;
 
-            if (waitpid(pid, NULL, 2) == -1) {
+            if (waitpid(pid, nullptr, WUNTRACED) == -1) {
                 perror("smash error: waitpid failed");
                 return;
             }
@@ -665,6 +707,81 @@ void ExternalCommand::execute(){ // Remember to update current_pid and current_c
  *    kill() syscall fails - perror used to print proper error message
  */
 
+KillCommand::KillCommand(char *cmd_line) : BuiltInCommand(cmd_line) {}
+
+void KillCommand::execute() {
+    char **args = (char **) malloc(MAX_ARG_NUM * sizeof(char *));
+    size_t size = _parseCommandLine(this->cmd_line, args);
+
+    if (size != 3){
+        cerr << "smash error: kill: invalid arguments" << endl;
+        freeArgs(args, size);
+        return;
+    }
+
+    int signum, job_id;
+    try{
+        job_id = atoi(args[2]);
+    } catch (invalid_argument &e){
+        cerr << "smash error: kill: invalid arguments" << endl;
+        freeArgs(args, size);
+        return;
+    } catch (out_of_range &e){
+        cerr << "smash error: kill: invalid arguments" << endl;
+        freeArgs(args, size);
+        return;
+    }
+    char f = string(args[1]).at(0);
+    char hyphen = '-';
+    if (f != hyphen){
+        cerr << "smash error: kill: invalid arguments" << endl;
+        freeArgs(args, size);
+        return;
+    }
+
+    try{
+        signum = stoi(string(args[1]).erase(0, 1));
+    } catch (invalid_argument &e){
+        cerr << "smash error: kill: invalid arguments" << endl;
+        freeArgs(args, size);
+        return;
+    } catch (out_of_range &e){
+        cerr << "smash error: kill: invalid arguments" << endl;
+        freeArgs(args, size);
+        return;
+    }
+
+    //both signum and job_id are numbers
+    SmallShell &instance = SmallShell::getInstance();
+    JobsList jobs = instance.smash_jobs_list;
+
+    if (JobEntry *job = jobs.getJobById(job_id)){
+        pid_t pid = job->pid;
+
+        if (kill(pid, signum) == SYSCALL_FAILED){
+            perror("smash error: kill failed");
+            freeArgs(args, size);
+            return;
+        }
+
+        cout << "signal number " << signum << " was sent to pid " << pid << endl;
+
+        if (signum == SIGTSTP)
+		{
+		  job->stopped = true;
+		}
+        else if (signum == SIGCONT)
+		{
+		  job->stopped = false;
+		}
+    } else {
+        cerr << "smash error: kill: job-id " << job_id << " does not exist" << endl;
+        freeArgs(args, size);
+        return;
+    }
+    freeArgs(args, size);
+}
+
 
 /*
  *  JOBS LIST FUNCTIONS
@@ -685,10 +802,14 @@ void JobsList::addJob(Command *cmd, pid_t pid, bool last_fg, bool isStopped) {
     string command(cmd->cmd_line);
     SmallShell &instance = SmallShell::getInstance();
 
-    if (last_fg) jobs_map.emplace <int, JobEntry> ((int)instance.fg_job_id, {pid, time(nullptr), command, isStopped});
+    if (last_fg) {
+	  jobs_map.emplace<int, JobEntry>((int) instance.fg_job_id, {pid, time(nullptr), command, isStopped});
+	}
     else{ // Note for self (shilo): no need to worry about cases such as running an fg proc and adding a different job, since it's not possible. Also, smile more
         int job_id;
-        if (jobs_map.empty()) job_id = 0;
+        if (jobs_map.empty()) {
+		  job_id = 0;
+		}
         else{
             map<int, JobEntry>::iterator it = jobs_map.end();
             job_id = (--it)->first;
@@ -735,16 +856,20 @@ void JobsList::killAllJobs() {
  * removes finished jobs from list
  */
 void JobsList::removeFinishedJobs(){
-    if (jobs_map.empty()) return;
+    if (jobs_map.empty()) {
+	  return;
+	}
 
     SmallShell& instance = SmallShell::getInstance();
 
     for (auto it = jobs_map.begin(); it != jobs_map.end();){
         if(!instance.is_pipe){
             JobEntry job = (*it).second;
-            int ret_wait = waitpid(job.pid, NULL, WNOHANG);
+            int ret_wait = waitpid(job.pid, nullptr, WNOHANG);
 
-            if (ret_wait == job.pid || ret_wait == -1) it = jobs_map.erase(it); // 'erase' returns an iterator to the element after erased element
+            if (ret_wait == job.pid || ret_wait == -1) {
+			  it = jobs_map.erase(it); // 'erase' returns an iterator to the element after erased element
+			}
             else it++;
         }
     }
@@ -756,7 +881,9 @@ void JobsList::removeFinishedJobs(){
 JobEntry* JobsList::getJobById(int jobId) {
     auto found = jobs_map.find(jobId);
 
-    if (found == jobs_map.end()) return nullptr;
+    if (found == jobs_map.end()) {
+	  return nullptr;
+	}
     else return &(found->second);
 }
 
@@ -766,7 +893,9 @@ void JobsList::removeJobById(int jobId) {
 }
 
 JobEntry* JobsList::getLastJob(int *lastJobId) {
-    if (jobs_map.empty()) return nullptr;
+    if (jobs_map.empty()) {
+	  return nullptr;
+	}
 
     auto end = jobs_map.end();
     *lastJobId = (--end)->first;
@@ -777,7 +906,9 @@ JobEntry* JobsList::getLastJob(int *lastJobId) {
 JobEntry *JobsList::getLastStoppedJob(int *jobId) {
     int last = -1;
     for (auto &j: jobs_map) {
-        if (j.second.stopped) last = j.first;
+        if (j.second.stopped) {
+		  last = j.first;
+		}
     }
 
     if (last == -1){
@@ -855,10 +986,16 @@ void RedirectionCommand::cleanup(){
     free(this->cmd);
 
     // We check for success first, because if we failed to open in the first place - of course we won't close anything
-    if (this->is_success && close(fd) == SYSCALL_FAILED) perror("smash error: close failed");
+    if (this->is_success && close(fd) == SYSCALL_FAILED) {
+	  perror("smash error: close failed");
+	}
 
-    if (dup2(this->fd_copy_of_stdout, 1) == SYSCALL_FAILED) perror("smash error: dup2 failed"); // Moving copy of stdout back to stdout's index (1)
-    if (close(this->fd_copy_of_stdout) == SYSCALL_FAILED) perror("smash error: close failed"); // Closing copy of stdout
+    if (dup2(this->fd_copy_of_stdout, 1) == SYSCALL_FAILED) {
+	  perror("smash error: dup2 failed"); // Moving copy of stdout back to stdout's index (1)
+	}
+    if (close(this->fd_copy_of_stdout) == SYSCALL_FAILED) {
+	  perror("smash error: close failed"); // Closing copy of stdout
+	}
 }
 
 
@@ -870,15 +1007,23 @@ PipeCommand::PipeCommand(char *cmd_line): Command(cmd_line){
     string cmd = string(cmd_line);
 
     //determine if the pipe is | or |&
-    if (cmd.find("|&") == string::npos) bar = "|";
-    else bar = "|&";
+    if (cmd.find("|&") == string::npos) {
+	  bar = "|";
+	}
+    else {
+	  bar = "|&";
+	}
 
     //cmd1 is from the start of the string to the position of | or |&
     com1 = cmd.substr(0, cmd.find(bar));
 
     //cmd2 is from after | or |& to end of string
-    if (bar == "|") com2 = cmd.substr(cmd.find(bar) + 1, cmd.length());
-    else com2 = cmd.substr(cmd.find(bar) + 2, cmd.length());
+    if (bar == "|") {
+	  com2 = cmd.substr(cmd.find(bar) + 1, cmd.length());
+	}
+    else {
+	  com2 = cmd.substr(cmd.find(bar) + 2, cmd.length());
+	}
 }
 
 void PipeCommand::execute(){
@@ -1006,6 +1151,8 @@ FareCommand::FareCommand(char *cmd_line) : BuiltInCommand(cmd_line) {
     freeArgs(args, size);
 }
 
+//"If the “fare” command files mid-way, the file should remain as it was before invoking
+//“fare”." TODO!!
 void FareCommand::execute() {
     if (failed) return;
 
@@ -1020,9 +1167,14 @@ void FareCommand::execute() {
     string l;
     vector<string> lines;
 
-    while (getline(file, l)) lines.push_back(l);
+    while (getline(file, l))
+	{
+	  lines.push_back(l);
+	}
 
     file.close();
+
+    //up to here the file wasn't touched
     file.open(file_name, ios::out);
     int c = 0;
     for (string line : lines){
@@ -1030,7 +1182,9 @@ void FareCommand::execute() {
             size_t i = 0;
             while (true){
                 i = line.find(source, i);
-                if (i == string::npos) break;
+                if (i == string::npos) {
+				  break;
+				}
                 line.erase(i, source.size());
                 line.insert(i, destination);
                 i += destination.size();
@@ -1041,5 +1195,6 @@ void FareCommand::execute() {
     }
 
     file.close();
+
     cout << "replaced " << c << " instances of the string \"" << source << "\"" << endl;
 }

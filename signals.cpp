@@ -12,9 +12,14 @@ void ctrlZHandler(int sig_num){
     //add the foreground process to the jobs list. If no process is running in the foreground, then nothing will be added to the jobs list.
     //send SIGSTOP to the process in the foreground. If no process is running in the foreground, then no signal will be sent. (page 16)
     if (instance.current_pid != -1){
+	  //cout << "hay" << endl;
         Command* command = instance.CreateCommand((char*)instance.current_command.c_str());
-        if (instance.last_fg) instance.smash_jobs_list.addJob(command, instance.current_pid, true, true); // If last was foreground
-        else instance.smash_jobs_list.addJob(command, instance.current_pid, false, true);
+        if (instance.last_fg) {
+		  instance.smash_jobs_list.addJob(command, instance.current_pid, true, true); // If last was foreground
+		}
+        else {
+		  instance.smash_jobs_list.addJob(command, instance.current_pid, false, true);
+		}
 
         kill(instance.current_pid, SIGSTOP);
         cout << "smash: process " << instance.current_pid << " was stopped" << endl;

@@ -225,7 +225,8 @@ class KillCommand: public BuiltInCommand {
     /* Bonus */
     // TODO: Add your data members
 public:
-    KillCommand(char *cmd_line, JobsList *jobs);
+    //KillCommand(char *cmd_line, JobsList *jobs);
+    KillCommand(char *cmd_line);
 
     virtual ~KillCommand() {}
 
