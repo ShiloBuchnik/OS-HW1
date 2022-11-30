@@ -427,7 +427,7 @@ ForegroundCommand::ForegroundCommand(char *cmd_line): BuiltInCommand(cmd_line) {
 
 void ForegroundCommand::execute() {
     SmallShell &instance = SmallShell::getInstance();
-    JobsList jobs = instance.smash_jobs_list;
+    //JobsList jobs = instance.smash_jobs_list;
 
     char** args = (char **) malloc(MAX_ARG_NUM * sizeof(char *));
     size_t size = _parseCommandLine(this->cmd_line, args);
@@ -452,10 +452,10 @@ void ForegroundCommand::execute() {
             return;
         }
     }
-    jobs.removeFinishedJobs();
+    instance.smash_jobs_list.removeFinishedJobs();
     int last_job_id = 0;
 
-    JobEntry *job = jobs.getLastJob(&last_job_id);
+    JobEntry *job = instance.smash_jobs_list.getLastJob(&last_job_id);
     //if no job_id specified, the job to be moved to the fg is the last job
     //if job_id is specified, we will change job to the job by id
 
@@ -474,7 +474,7 @@ void ForegroundCommand::execute() {
     }
 
     if (job_id > 0){ // Assert size == 2
-        job = jobs.getJobById(job_id);
+        job = instance.smash_jobs_list.getJobById(job_id);
 
         //job_id && the job with that id doesn't  exist
         if (!job){
@@ -494,7 +494,7 @@ void ForegroundCommand::execute() {
 
     instance.current_pid = pid;
     instance.current_command = job->command;
-    jobs.removeJobById(job_id);
+    instance.smash_jobs_list.removeJobById(job_id);
     instance.current_job = job;
     if (waitpid(pid, nullptr, WUNTRACED) == -1){
         perror("smash error: waitpid failed");
@@ -532,7 +532,7 @@ void BackgroundCommand::execute() {
     size_t size = _parseCommandLine(this->cmd_line, args);
 
     SmallShell &instance = SmallShell::getInstance();
-    JobsList jobs = instance.smash_jobs_list;
+    //JobsList jobs = instance.smash_jobs_list;
 
     if (size > 2) {
         cerr << "smash error: bg: invalid arguments" << endl;
@@ -555,7 +555,7 @@ void BackgroundCommand::execute() {
             freeArgs(args, size);
             return;
         }
-        job = jobs.getJobById(job_id);
+        job = instance.smash_jobs_list.getJobById(job_id);
         if (!job) {
             cerr << "smash error: bg: job-id " << job_id << " does not exist" << endl;
             freeArgs(args, size);
@@ -568,7 +568,7 @@ void BackgroundCommand::execute() {
         }
     } else {
         //no job id specified - last stopped job in jobs list is to continue running in bg
-        job = jobs.getLastStoppedJob(&job_id);
+        job = instance.smash_jobs_list.getLastStoppedJob(&job_id);
         if (!job) {
             cerr << "smash error: bg: there is no stopped jobs to resume" << endl;
             freeArgs(args, size);
@@ -606,12 +606,12 @@ void QuitCommand::execute() {
     size_t size = _parseCommandLine(this->cmd_line, args);
 
     SmallShell &instance = SmallShell::getInstance();
-    JobsList jobs = instance.smash_jobs_list;
+    //JobsList jobs = instance.smash_jobs_list;
 
     if (size == 2 && !strcmp(args[1], "kill")) {
-        jobs.removeFinishedJobs();
-        cout << "smash: sending SIGKILL signal to " << jobs.jobs_map.size() << " jobs:" << endl;
-        jobs.killAllJobs();
+        instance.smash_jobs_list.removeFinishedJobs();
+        cout << "smash: sending SIGKILL signal to " << instance.smash_jobs_list.jobs_map.size() << " jobs:" << endl;
+        instance.smash_jobs_list.killAllJobs();
 
         exit(0);
     }
@@ -753,9 +753,9 @@ void KillCommand::execute() {
 
     //both signum and job_id are numbers
     SmallShell &instance = SmallShell::getInstance();
-    JobsList jobs = instance.smash_jobs_list;
+    //JobsList jobs = instance.smash_jobs_list;
 
-    if (JobEntry *job = jobs.getJobById(job_id)){
+    if (JobEntry *job = instance.smash_jobs_list.getJobById(job_id)){
         pid_t pid = job->pid;
 
         if (kill(pid, signum) == SYSCALL_FAILED){
@@ -1196,5 +1196,9 @@ void FareCommand::execute() {
 
     file.close();
 
-    cout << "replaced " << c << " instances of the string \"" << source << "\"" << endl;
+	if (c == 1){
+	  cout << "replaced " << c << " instance of the string \"" << source << "\"" << endl;
+	}else {
+	  cout << "replaced " << c << " instances of the string \"" << source << "\"" << endl;
+	}
 }
