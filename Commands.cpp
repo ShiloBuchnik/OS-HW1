@@ -526,7 +526,7 @@ void ForegroundCommand::execute() {
 	instance.fg_job_id = job_id;
 
     instance.current_job = job;
-    if (waitpid(pid, nullptr, WUNTRACED) == -1){
+    if (waitpid(pid, nullptr, WUNTRACED) == SYSCALL_FAILED){
         perror("smash error: waitpid failed");
         freeArgs(args, size);
         return;
@@ -695,8 +695,10 @@ void ExternalCommand::execute(){ // Remember to update current_pid and current_c
             free(path);
         }
         else { // Simple command
+		  //cerr << "gonna run execvp yay" << endl;
+		  //cerr << "args[0] " << args[0] << " args " << *args << endl;
             if (execvp(args[0], args)) {
-                perror("smash error: execv failed");
+                perror("smash error: execvp failed");
                 exit(-1);
             }
         }
@@ -711,7 +713,7 @@ void ExternalCommand::execute(){ // Remember to update current_pid and current_c
             instance.current_pid = pid;
             instance.current_command = cmd_line;
 
-            if (waitpid(pid, nullptr, WUNTRACED) == -1) {
+            if (waitpid(pid, nullptr, WUNTRACED) == SYSCALL_FAILED) {
                 perror("smash error: waitpid failed");
                 return;
             }
