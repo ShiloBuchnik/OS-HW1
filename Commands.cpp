@@ -667,7 +667,12 @@ void ExternalCommand::execute(){ // Remember to update current_pid and current_c
 
     /*for (size_t i = 0; i < size; i++){
         cout << args[i] << endl;
-    } */
+    }
+     ^Z
+jobs
+bg
+jobs
+     */
 
     pid_t pid = fork();
     if (pid == 0) { // Son, this is the actual external command
@@ -742,7 +747,7 @@ void ExternalCommand::execute(){ // Remember to update current_pid and current_c
 KillCommand::KillCommand(char *cmd_line) : BuiltInCommand(cmd_line) {}
 
 void KillCommand::execute() {
-    char **args = (char **) malloc(MAX_ARG_NUM * sizeof(char *));
+    char** args = (char**) malloc(MAX_ARG_NUM * sizeof(char*));
     size_t size = _parseCommandLine(this->cmd_line, args);
 
     if (size != 3){
@@ -750,9 +755,10 @@ void KillCommand::execute() {
         freeArgs(args, size);
         return;
     }
+    //kill -sig jobid
 
     int signum, job_id;
-    try{
+    try{ // Validating job_id
         job_id = atoi(args[2]);
     } catch (invalid_argument &e){
         cerr << "smash error: kill: invalid arguments" << endl;
@@ -763,15 +769,15 @@ void KillCommand::execute() {
         freeArgs(args, size);
         return;
     }
+
     char f = string(args[1]).at(0);
-    char hyphen = '-';
-    if (f != hyphen){
+    if (f != '-'){ // Checking for hyphen
         cerr << "smash error: kill: invalid arguments" << endl;
         freeArgs(args, size);
         return;
     }
 
-    try{
+    try{ // Validating signum
         signum = stoi(string(args[1]).erase(0, 1));
     } catch (invalid_argument &e){
         cerr << "smash error: kill: invalid arguments" << endl;
@@ -784,10 +790,11 @@ void KillCommand::execute() {
     }
 
     //both signum and job_id are numbers
-    SmallShell &instance = SmallShell::getInstance();
+    SmallShell& instance = SmallShell::getInstance();
     //JobsList jobs = instance.smash_jobs_list;
 
-    if (JobEntry *job = instance.smash_jobs_list.getJobById(job_id)){
+    JobEntry *job = instance.smash_jobs_list.getJobById(job_id);
+    if (job){
         pid_t pid = job->pid;
 
         if (kill(pid, signum) == SYSCALL_FAILED){
@@ -999,7 +1006,7 @@ void RedirectionCommand::prepare(){
         return;
     }
 
-    this->fd = (is_append) ? open(filename, O_WRONLY | O_APPEND | O_CREAT, 0666) : open(filename, O_WRONLY | O_TRUNC | O_CREAT , 0666);
+    this->fd = (is_append) ? open(filename, O_WRONLY | O_APPEND | O_CREAT, 0655) : open(filename, O_WRONLY | O_TRUNC | O_CREAT , 0655);
 
     if (this->fd == SYSCALL_FAILED) {
         perror("smash error: open failed");
