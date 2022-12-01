@@ -665,14 +665,7 @@ void ExternalCommand::execute(){ // Remember to update current_pid and current_c
 
     size_t size = _parseCommandLine(cmd_line_copy, args);
 
-    /*for (size_t i = 0; i < size; i++){
-        cout << args[i] << endl;
-    }
-     ^Z
-jobs
-bg
-jobs
-     */
+    cout << string(args[0]) << endl;
 
     pid_t pid = fork();
     if (pid == 0) { // Son, this is the actual external command
