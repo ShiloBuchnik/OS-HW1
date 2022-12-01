@@ -13,8 +13,10 @@ void ctrlZHandler(int sig_num){
     //send SIGSTOP to the process in the foreground. If no process is running in the foreground, then no signal will be sent. (page 16)
     if (instance.current_pid != -1){
 	  //cout << "hay" << endl;
+	  bool tmp = instance.last_fg;
         Command* command = instance.CreateCommand((char*)instance.current_command.c_str());
-        if (instance.last_fg) {
+		//cout << "the cmd is " << instance.current_command << "id " <<  << endl;
+        if (tmp) {
 		  instance.smash_jobs_list.addJob(command, instance.current_pid, true, true); // If last was foreground
 		}
         else {

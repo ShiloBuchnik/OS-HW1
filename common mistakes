@@ -3,4 +3,4 @@
 This got me fucked up with dry 1 question 2.
 3) Note that the parser returns an array of words, *including* the command name. So arguments starts at 1,2,3.. and not at 0.
 
-flags for compiling: g++ -Wall -Wpedantic --std=c++11 smash.cpp commands.cpp commands.h signals.cpp signals.h
+flags for compiling: g++ -g -Wall -Wpedantic --std=c++11 smash.cpp commands.cpp commands.h signals.cpp signals.h

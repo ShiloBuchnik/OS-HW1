@@ -130,11 +130,13 @@ public:
 class JobsCommand: public BuiltInCommand {
     // TODO: Add your data members
 public:
-    JobsList* jobs;
+    //JobsList* jobs;					//CHANGED 18:05
 
-    JobsCommand(char *cmd_line, JobsList* jobs);
+    //JobsCommand(char *cmd_line, JobsList* jobs);		///CHANGED 18:05
 
-    virtual ~JobsCommand() {}
+	explicit JobsCommand(char *cmd_line);
+
+    virtual ~JobsCommand() = default;
 
     void execute() override;
 };
@@ -266,7 +268,7 @@ public:
     ~JobsList() = default;
 
     void addJob(Command *cmd, pid_t pid, bool last_fg = false, bool isStopped = false);
-    void printJobsList();
+    //void printJobsList(); 			////CHANGED 18:05
 
     void killAllJobs();
 

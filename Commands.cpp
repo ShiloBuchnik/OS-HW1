@@ -185,7 +185,8 @@ Command* SmallShell::CreateCommand(char *cmd_line) {
 	}
 
     else if (first_word == "jobs") {
-	  return new JobsCommand(cmd_line, &(this->smash_jobs_list));
+	  //return new JobsCommand(cmd_line, &(this->smash_jobs_list));				//CHANGED 18:05
+	  return new JobsCommand(cmd_line);
 	}
 
     else if (first_word == "fg"){
@@ -223,8 +224,9 @@ void SmallShell::executeCommand(const char *cmd_line) {
 
     if (strcmp(cmd_line, "") == 0) return;
 
-    SmallShell& instance = SmallShell::getInstance();
-    instance.smash_jobs_list.removeFinishedJobs();
+    //SmallShell& instance = SmallShell::getInstance();
+    //instance.smash_jobs_list.removeFinishedJobs();
+	smash_jobs_list.removeFinishedJobs();
 
     Command* cmd = CreateCommand((char*)cmd_line);
     cmd->execute();
@@ -398,10 +400,34 @@ void ChangeDirCommand::execute() {
  *    params are ignored
  */
 
+/*				////CHANGED 18:05, MIGHT DELETE
 JobsCommand::JobsCommand(char* cmd_line, JobsList* jobs): BuiltInCommand(cmd_line), jobs(jobs) {}
 
 void JobsCommand::execute(){
     jobs->printJobsList();
+}
+ */
+
+JobsCommand::JobsCommand(char* cmd_line): BuiltInCommand(cmd_line) {}
+
+void JobsCommand::execute(){
+  SmallShell &instance = SmallShell::getInstance();
+  //before printing jobs list, finished jobs are deleted from list
+  instance.smash_jobs_list.removeFinishedJobs();
+
+  for (auto &j: instance.smash_jobs_list.jobs_map) {
+	if (j.second.stopped) {
+	  //[<job-id>] <command> : <process id> <seconds elapsed> (stopped)
+	  cout << "[" << j.first << "] " << j.second.command << " : " << j.second.pid << " " <<
+		   difftime(time(nullptr), j.second.time) << "secs (stopped)" << endl;
+	}
+	else{
+	  //[<job-id>] <command> : <process id> <seconds elapsed>
+	  cout << "[" << j.first << "] " << j.second.command << " : " << j.second.pid << " " <<
+		   difftime(time(nullptr), j.second.time) << "secs" << endl;
+	}
+  }
+
 }
 
 
@@ -482,7 +508,9 @@ void ForegroundCommand::execute() {
             freeArgs(args, size);
             return;
         }
-    }
+    } else {
+	  job_id = last_job_id;
+	}
 
     pid_t pid = job->pid;
     cout << job->command << " : " << pid << endl;
@@ -495,6 +523,8 @@ void ForegroundCommand::execute() {
     instance.current_pid = pid;
     instance.current_command = job->command;
     instance.smash_jobs_list.removeJobById(job_id);
+	instance.fg_job_id = job_id;
+
     instance.current_job = job;
     if (waitpid(pid, nullptr, WUNTRACED) == -1){
         perror("smash error: waitpid failed");
@@ -801,6 +831,7 @@ void JobsList::addJob(Command *cmd, pid_t pid, bool last_fg, bool isStopped) {
     removeFinishedJobs(); // Get back to here when implementing external background commands
     string command(cmd->cmd_line);
     SmallShell &instance = SmallShell::getInstance();
+	instance.smash_jobs_list.removeFinishedJobs();
 
     if (last_fg) {
 	  jobs_map.emplace<int, JobEntry>((int) instance.fg_job_id, {pid, time(nullptr), command, isStopped});
@@ -823,6 +854,8 @@ void JobsList::addJob(Command *cmd, pid_t pid, bool last_fg, bool isStopped) {
  * print jobs list in format (page 6)
  * used in jobs command
  */
+
+/*					////CHANGED 18:05, MIGHT DELETE
 void JobsList::printJobsList() {
     SmallShell &instance = SmallShell::getInstance();
     //before printing jobs list, finished jobs are deleted from list
@@ -841,6 +874,7 @@ void JobsList::printJobsList() {
         }
     }
 }
+ */
 
 /*
  * kills all jobs. used in quit command if kill is specified and prints jobs killed in format (page 9)
