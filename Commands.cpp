@@ -972,7 +972,7 @@ RedirectionCommand::RedirectionCommand(char *cmd_line): Command(cmd_line){
     char** args = (char**) malloc(MAX_ARG_NUM * sizeof(char*));
     size_t size = _parseCommandLine(this->cmd_line, args);
     string str = string(cmd_line);
-    string delim = str.find(">") != string::npos ? ">" : ">>";
+    string delim = str.find(">>") != string::npos ? ">>" : ">";
 
     string trim_cmd = _trim(str.substr(0, str.find(delim))); // command to the left
     this->cmd = (char*) malloc((strlen(trim_cmd.c_str()) + 1) * sizeof(char));
@@ -989,7 +989,7 @@ RedirectionCommand::RedirectionCommand(char *cmd_line): Command(cmd_line){
     filename = (char*) malloc((strlen(trim_filename.c_str()) + 1) * sizeof(char));
     strcpy(filename, trim_filename.c_str()); // filename to the right
 
-    this->is_append = (strcmp(delim.c_str(), ">>") == 0) ? true : false;
+    this->is_append = (strcmp(delim.c_str(), ">>") == 0);
     this->is_success = false;
     this->fd_copy_of_stdout = 0;
     this->fd = 0;
@@ -1109,7 +1109,7 @@ void PipeCommand::execute(){
                 pipeErrorHandle(pipefd[0], pipefd[1]);
                 return;
             }
-            else { //bar == "|&"
+		} else { //bar == "|&"
                 /*
                  * using the pipe character “|&” will produce a pipe
                  * which redirects command1 stderr to the pipe’s write channel and command2 stdin
@@ -1130,7 +1130,7 @@ void PipeCommand::execute(){
             instance.executeCommand(com1.c_str());
             exit(0);
         }
-    }
+
 
     pid_t pid2 = fork();
     if (pid2 == SYSCALL_FAILED) {
