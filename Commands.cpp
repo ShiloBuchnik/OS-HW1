@@ -477,6 +477,12 @@ void ForegroundCommand::execute() {
             freeArgs(args, size);
             return;
         }
+
+		if (job_id < 0){	//job_id is number byt an invalid one
+		  cerr << "smash error: fg: job-id " << args[1] << " does not exist" << endl;
+		  freeArgs(args, size);
+		  return;
+		}
     }
     instance.smash_jobs_list.removeFinishedJobs();
     int last_job_id = 0;
