@@ -419,12 +419,12 @@ void JobsCommand::execute(){
 	if (j.second.stopped) {
 	  //[<job-id>] <command> : <process id> <seconds elapsed> (stopped)
 	  cout << "[" << j.first << "] " << j.second.command << " : " << j.second.pid << " " <<
-		   difftime(time(nullptr), j.second.time) << "secs (stopped)" << endl;
+		   difftime(time(nullptr), j.second.time) << " secs (stopped)" << endl;
 	}
 	else{
 	  //[<job-id>] <command> : <process id> <seconds elapsed>
 	  cout << "[" << j.first << "] " << j.second.command << " : " << j.second.pid << " " <<
-		   difftime(time(nullptr), j.second.time) << "secs" << endl;
+		   difftime(time(nullptr), j.second.time) << " secs" << endl;
 	}
   }
 
@@ -467,7 +467,7 @@ void ForegroundCommand::execute() {
     //job_id is specified
     else if (size == 2) {
         try {
-            job_id = atoi(args[1]);
+            job_id = stoi(args[1]);
         } catch (invalid_argument &e) {
             cerr << "smash error: fg: invalid arguments" << endl;
             freeArgs(args, size);
@@ -575,7 +575,7 @@ void BackgroundCommand::execute() {
     //if job id is specified
     if (size == 2) {
         try {
-            job_id = atoi(args[1]);
+            job_id = stoi(args[1]);
         } catch (invalid_argument &e) {
             cerr << "smash error: bg: invalid arguments" << endl;
             freeArgs(args, size);
@@ -665,7 +665,7 @@ void ExternalCommand::execute(){ // Remember to update current_pid and current_c
 
     size_t size = _parseCommandLine(cmd_line_copy, args);
 
-    cout << string(args[0]) << endl;
+    //cout << string(args[0]) << endl;
 
     pid_t pid = fork();
     if (pid == 0) { // Son, this is the actual external command
@@ -752,7 +752,7 @@ void KillCommand::execute() {
 
     int signum, job_id;
     try{ // Validating job_id
-        job_id = atoi(args[2]);
+        job_id = stoi(args[2]);
     } catch (invalid_argument &e){
         cerr << "smash error: kill: invalid arguments" << endl;
         freeArgs(args, size);
@@ -781,6 +781,12 @@ void KillCommand::execute() {
         freeArgs(args, size);
         return;
     }
+
+	if (signum < 1 || signum > 31){
+	  cerr << "smash error: kill: invalid arguments" << endl;
+	  freeArgs(args, size);
+	  return;
+	}
 
     //both signum and job_id are numbers
     SmallShell& instance = SmallShell::getInstance();
