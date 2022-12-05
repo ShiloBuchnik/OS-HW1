@@ -16,12 +16,6 @@ public:
     virtual ~Command()  = default;
 
     virtual void execute() = 0;
-
-    /*virtual void prepare();
-    virtual void cleanup();
-    char* get_cmd_line() {
-        return cmd_line;
-    }*/
 };
 
 class BuiltInCommand: public Command {
@@ -60,7 +54,7 @@ public:
     char* cmd;
     char* filename;
     bool is_append;
-    bool is_success; // redirect_success, delete this comment later
+    bool is_success;
     int fd_copy_of_stdout;
     int fd;
 
@@ -128,12 +122,7 @@ public:
  * 5. jobs
  */
 class JobsCommand: public BuiltInCommand {
-    // TODO: Add your data members
 public:
-    //JobsList* jobs;					//CHANGED 18:05
-
-    //JobsCommand(char *cmd_line, JobsList* jobs);		///CHANGED 18:05
-
 	explicit JobsCommand(char *cmd_line);
 
     virtual ~JobsCommand() = default;
@@ -179,23 +168,8 @@ public:
     void execute() override;
 };
 
-class TimeoutCommand: public BuiltInCommand {
-/* Optional */
-// TODO: Add your data members
-public:
-    explicit TimeoutCommand(char *cmd_line);
-
-    virtual ~TimeoutCommand() {}
-
-    void execute() override;
-};
-
 class FareCommand: public BuiltInCommand {
-    /* Optional */
-    // TODO: Add your data members
-
 public:
-
     std::string file_name;
     std::string source;
     std::string destination;
@@ -209,25 +183,11 @@ public:
     void execute() override;
 };
 
-class SetcoreCommand: public BuiltInCommand {
-    /* Optional */
-    // TODO: Add your data members
-public:
-    SetcoreCommand(char *cmd_line);
-
-    virtual ~SetcoreCommand() {}
-
-    void execute() override;
-};
-
 /*
  * 10. kill
  */
 class KillCommand: public BuiltInCommand {
-    /* Bonus */
-    // TODO: Add your data members
 public:
-    //KillCommand(char *cmd_line, JobsList *jobs);
     KillCommand(char *cmd_line);
 
     virtual ~KillCommand() {}
@@ -257,18 +217,15 @@ public:
 class JobsList {
 public:
     /*
-     * jobs list is a vector made of jobEntry elements
+     * jobs list is a map made of jobEntry elements
      */
     std::map <int, JobEntry> jobs_map;
 
-    // TODO: Add your data members
-public:
     JobsList();
 
     ~JobsList() = default;
 
     void addJob(Command *cmd, pid_t pid, bool last_fg = false, bool isStopped = false);
-    //void printJobsList(); 			////CHANGED 18:05
 
     void killAllJobs();
 
@@ -280,7 +237,6 @@ public:
     JobEntry *getLastJob(int *lastJobId);
 
     JobEntry *getLastStoppedJob(int *jobId);
-    // TODO: Add extra methods or modify exisitng ones as needed
 };
 
 class SmallShell {
@@ -312,7 +268,6 @@ public:
     Command* CreateCommand(char *cmd_line);
 
     void executeCommand(const char *cmd_line);
-    // TODO: add extra methods as needed
 };
 
 #endif //SMASH_COMMAND_H_

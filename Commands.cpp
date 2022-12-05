@@ -91,19 +91,6 @@ void _removeBackgroundSign(char *cmd_line) {
 
 /// Helper functions:
 
-/* // This function returns a vector containing the words in 'cmd_line'
-vector<char*> getArgs(const char* cmd_line){
-    vector<char*> args = {};
-    char* token = strtok(cmd_line, " "); // This function runs on the string until it sees " ", and returns what it scanned so far
-
-    while (token){
-        args.push_back(toekn);
-        token = strtok(NULL, " "); // It preserves internal state, so now it runs from where it stopped until it sees " " again
-    }
-
-    return args;
-} */
-
 // Args is an array of pointers. This function frees said pointers, and then frees the array itself
 void freeArgs(char **args, size_t size) {
     for (size_t i = 0; i < size; i++) {
@@ -150,14 +137,6 @@ SmallShell::~SmallShell() {
 Command* SmallShell::CreateCommand(char *cmd_line) {
     string trim_cmd = _trim(string(cmd_line));
 
-    /// Return if code doesn't work
-    /*if (!checker(cmd_s) && _isBackgroundCommand(cmd_s.c_str())) {
-        char cmd_line_copy[COMMAND_ARGS_MAX_LENGTH];
-        strcpy(cmd_line_copy, cmd_s.c_str());
-        _removeBackgroundSign(cmd_line_copy);
-        cmd_s = cmd_line_copy;
-    } */
-
     string first_word = trim_cmd.substr(0, trim_cmd.find_first_of("& \n")); // Finds first occurrence of '&', or ' ' or '\n'
 
     if (strstr(cmd_line, ">") || strstr(cmd_line, ">>")) {
@@ -185,7 +164,6 @@ Command* SmallShell::CreateCommand(char *cmd_line) {
 	}
 
     else if (first_word == "jobs") {
-	  //return new JobsCommand(cmd_line, &(this->smash_jobs_list));				//CHANGED 18:05
 	  return new JobsCommand(cmd_line);
 	}
 
@@ -210,22 +188,11 @@ Command* SmallShell::CreateCommand(char *cmd_line) {
 	  return new KillCommand(cmd_line);
 	}
 
-    /// Get back to it if we have time
-    //else if (first_word == "kill") return new KillCommand(cmd_line);
-
     else return new ExternalCommand(cmd_line);
 }
 
 void SmallShell::executeCommand(const char *cmd_line) {
-    // for example:
-    // Command* cmd = CreateCommand(cmd_line);
-    // cmd->execute();
-    // Please note that you must fork smash process for some commands (e.g., external commands....)
-
     if (strcmp(cmd_line, "") == 0) return;
-
-    //SmallShell& instance = SmallShell::getInstance();
-    //instance.smash_jobs_list.removeFinishedJobs();
 	smash_jobs_list.removeFinishedJobs();
 
     Command* cmd = CreateCommand((char*)cmd_line);
@@ -361,7 +328,7 @@ void ChangeDirCommand::execute() {
         getcwd(cur_path, MAX_LINE_LEN);
 
         if (chdir(instance.prev_dir.c_str()))
-            perror("smash error: chdir failed"); // Previous directory is invalid - could it be?
+            perror("smash error: chdir failed"); // Previous directory is invalid
 
         instance.prev_dir = cur_path;
     }
@@ -398,14 +365,6 @@ void ChangeDirCommand::execute() {
  *      [<job-id>] <command> : <process id> <seconds elapsed>
  * error handling:
  *    params are ignored
- */
-
-/*				////CHANGED 18:05, MIGHT DELETE
-JobsCommand::JobsCommand(char* cmd_line, JobsList* jobs): BuiltInCommand(cmd_line), jobs(jobs) {}
-
-void JobsCommand::execute(){
-    jobs->printJobsList();
-}
  */
 
 JobsCommand::JobsCommand(char* cmd_line): BuiltInCommand(cmd_line) {}
@@ -453,7 +412,6 @@ ForegroundCommand::ForegroundCommand(char *cmd_line): BuiltInCommand(cmd_line) {
 
 void ForegroundCommand::execute() {
     SmallShell &instance = SmallShell::getInstance();
-    //JobsList jobs = instance.smash_jobs_list;
 
     char** args = (char **) malloc(MAX_ARG_NUM * sizeof(char *));
     size_t size = _parseCommandLine(this->cmd_line, args);
@@ -478,7 +436,7 @@ void ForegroundCommand::execute() {
             return;
         }
 
-		if (job_id < 0){	//job_id is number byt an invalid one
+		if (job_id < 0){	//job_id is a number but an invalid one
 		  cerr << "smash error: fg: job-id " << args[1] << " does not exist" << endl;
 		  freeArgs(args, size);
 		  return;
@@ -568,7 +526,6 @@ void BackgroundCommand::execute() {
     size_t size = _parseCommandLine(this->cmd_line, args);
 
     SmallShell &instance = SmallShell::getInstance();
-    //JobsList jobs = instance.smash_jobs_list;
 
     if (size > 2) {
         cerr << "smash error: bg: invalid arguments" << endl;
@@ -642,7 +599,6 @@ void QuitCommand::execute() {
     size_t size = _parseCommandLine(this->cmd_line, args);
 
     SmallShell &instance = SmallShell::getInstance();
-    //JobsList jobs = instance.smash_jobs_list;
 
     if (size == 2 && !strcmp(args[1], "kill")) {
         instance.smash_jobs_list.removeFinishedJobs();
@@ -671,8 +627,6 @@ void ExternalCommand::execute(){ // Remember to update current_pid and current_c
 
     size_t size = _parseCommandLine(cmd_line_copy, args);
 
-    //cout << string(args[0]) << endl;
-
     pid_t pid = fork();
     if (pid == 0) { // Son, this is the actual external command
         if (setpgrp() == SYSCALL_FAILED) { // Unrelated to the logic, ignore it
@@ -699,8 +653,6 @@ void ExternalCommand::execute(){ // Remember to update current_pid and current_c
             free(path);
         }
         else { // Simple command
-		  //cerr << "gonna run execvp yay" << endl;
-		  //cerr << "args[0] " << args[0] << " args " << *args << endl;
             if (execvp(args[0], args)) {
                 perror("smash error: execvp failed");
                 exit(-1);
@@ -754,7 +706,6 @@ void KillCommand::execute() {
         freeArgs(args, size);
         return;
     }
-    //kill -sig jobid
 
     int signum, job_id;
     try{ // Validating job_id
@@ -796,7 +747,6 @@ void KillCommand::execute() {
 
     //both signum and job_id are numbers
     SmallShell& instance = SmallShell::getInstance();
-    //JobsList jobs = instance.smash_jobs_list;
 
     JobEntry *job = instance.smash_jobs_list.getJobById(job_id);
     if (job){
@@ -842,7 +792,7 @@ JobsList::JobsList(): jobs_map() {}
  */
 void JobsList::addJob(Command *cmd, pid_t pid, bool last_fg, bool isStopped) {
     //before adding new jobs to the list, finished jobs are deleted from list
-    removeFinishedJobs(); // Get back to here when implementing external background commands
+    removeFinishedJobs();
     string command(cmd->cmd_line);
     SmallShell &instance = SmallShell::getInstance();
 	instance.smash_jobs_list.removeFinishedJobs();
@@ -850,7 +800,7 @@ void JobsList::addJob(Command *cmd, pid_t pid, bool last_fg, bool isStopped) {
     if (last_fg) {
 	  jobs_map.emplace<int, JobEntry>((int) instance.fg_job_id, {pid, time(nullptr), command, isStopped});
 	}
-    else{ // Note for self (shilo): no need to worry about cases such as running an fg proc and adding a different job, since it's not possible. Also, smile more
+    else{
         int job_id;
         if (jobs_map.empty()) {
 		  job_id = 0;
@@ -867,27 +817,6 @@ void JobsList::addJob(Command *cmd, pid_t pid, bool last_fg, bool isStopped) {
 /*
  * print jobs list in format (page 6)
  * used in jobs command
- */
-
-/*					////CHANGED 18:05, MIGHT DELETE
-void JobsList::printJobsList() {
-    SmallShell &instance = SmallShell::getInstance();
-    //before printing jobs list, finished jobs are deleted from list
-    instance.smash_jobs_list.removeFinishedJobs();
-
-    for (auto &j: jobs_map) {
-        if (j.second.stopped) {
-            //[<job-id>] <command> : <process id> <seconds elapsed> (stopped)
-            cout << "[" << j.first << "] " << j.second.command << " : " << j.second.pid << " " <<
-                 difftime(time(nullptr), j.second.time) << "secs (stopped)" << endl;
-        }
-        else{
-            //[<job-id>] <command> : <process id> <seconds elapsed>
-            cout << "[" << j.first << "] " << j.second.command << " : " << j.second.pid << " " <<
-                 difftime(time(nullptr), j.second.time) << "secs" << endl;
-        }
-    }
-}
  */
 
 /*
@@ -1199,9 +1128,8 @@ FareCommand::FareCommand(char *cmd_line) : BuiltInCommand(cmd_line) {
     freeArgs(args, size);
 }
 
-//"If the “fare” command files mid-way, the file should remain as it was before invoking
-//“fare”." TODO!!
-void FareCommand::execute() {
+//"If the “fare” command fails mid-way, the file should remain as it was before invoking
+void FareCommand::execute(){
     if (failed) return;
 
     fstream file;
