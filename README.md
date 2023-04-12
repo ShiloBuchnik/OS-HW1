@@ -25,5 +25,5 @@ If 'job_id' is specified, it resumes the specified job.
 10. `fare <file-name> <source> <destination>` - finds and replaces every instance of the word 'source' to the word 'destination',
 and then prints how many instances of 'source' were replaced.
 
-## External:
+## Externals:
 Commands which are not builtins would be regarded as externals, and would be run by using `exec()`.
