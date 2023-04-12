@@ -1,10 +1,10 @@
 # OS-HW1
 ### In this assignment we've implemented a simplistic bash-like shell called 'smash'
 
-'smash' has the ability to run builtin and external commands, as listed below. 
+'smash' has the ability to run builtin and external commands, as listed below.  
 A job in the shell can run in the background (using the `&` operator), foreground or be stopped by pressing ctrl+z.  
-The shell supports pipe and redirection operators (`>, >>, |, |&`),  
-but only up to one operator in a command, and without the option to run it in background.  
+The shell supports pipe and redirection operators (`>, >>, |, |&`), but only up to one operator in a command,  
+and without the option to run it in background.  
 The shell also supports sending SIGINT and SIGTSTP signals, by pressing ctrl+c and ctrl+z, respectively.
 
 ## Builtins:
